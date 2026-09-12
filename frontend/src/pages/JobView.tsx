@@ -41,7 +41,7 @@ export function JobView({ jobId, onReport }: JobViewProps) {
 
   if (!job) return <div className="page loading-state"><LoaderCircle className="spin" size={28} /><h2>Connecting to recovery job…</h2><p>Job reference {jobId.slice(0, 12)}…</p></div>
   if (job.status === 'failed') return <div className="page"><div className="failure-state"><AlertTriangle size={34} /><span className="section-kicker">Recovery failed</span><h1>Analysis could not be completed.</h1><p>{job.error || 'The backend returned an unknown error.'}</p></div></div>
-  if (!job.report) return <div className="page loading-state"><LoaderCircle className="spin" size={28} /><h2>Reconstructing evidence…</h2><p>Job reference {jobId.slice(0, 12)}…</p></div>
+  if (!report) return <div className="page loading-state"><LoaderCircle className="spin" size={28} /><h2>Reconstructing evidence…</h2><p>Job reference {jobId.slice(0, 12)}…</p></div>
 
   return <div className="page job-page">
     <div className="case-header"><div><span className="section-kicker">Case / {job.job_id.slice(0, 8).toUpperCase()}</span><h1>{job.filename}</h1><p>{report.device_identification.vendor_name} · detected at offset {report.device_identification.signature_found_at_offset ?? '—'} · {new Date(job.created_at).toLocaleString()}</p></div><div className="case-actions"><span className={`status-badge ${job.status}`}>{job.status === 'done' ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}{job.status}</span>{job.status === 'done' && <button className="secondary-button" onClick={() => onReport(job)}>View report <Download size={15} /></button>}</div></div>

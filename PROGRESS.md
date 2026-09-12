@@ -25,6 +25,7 @@
 - [2026-09-12] Phase 3: FastAPI backend implemented with in-memory jobs, local `backend/data/{job_id}` storage, upload/demo processing, status/report/file routes, CORS, validation, and API tests
 - [2026-09-12] Phase 4: React + TypeScript dashboard implemented with AXIOM-style shell, upload/demo flow, polling job view, recovery stats, table/grid artifact views, report view, history, and typed API client
 - [2026-09-12] Phase 5: reportlab PDF reports implemented with cover, recovery summary, evidence index, methodology appendix, and draft Section 65B content; PDF download route and frontend button wired
+- [2026-09-12] Phase 6 Option A: transparent evidence search added for camera/channel, vendor, filename, and simple time expressions; backend route and frontend search box are wired
 
 
 ## Next up
@@ -61,10 +62,16 @@
   PDF and JSON report explicitly state that DeepTrace cannot legally issue or sign 
   the certificate; human review and signature are required. The frontend report page 
   downloads the PDF directly.
+- Phase 6 Option A: `GET /api/jobs/{job_id}/search?q=...` searches recovered-file 
+  metadata with explainable keyword, camera/channel, vendor, and time-expression 
+  matching. The recovered-evidence view now includes a debounced search field. This 
+  is intentionally not OCR, an LLM, or a claim of visual understanding; it matches 
+  indexed report fields and is explainable in one sentence to a judge.
 - Switching from Antigravity (credits exhausted) to [next tool].
 
 ## Next up
-Proceed to Phase 6. Phase 5 validation is complete: backend/engine tests pass, the 
-generated PDF is 5 pages with the draft disclaimer, and the frontend TypeScript/Vite 
-build passes. PDF content is technical draft material only, not a completed legal 
-certificate.
+Proceed to Phase 8. Phase 6 Option A validation is complete: Python tests pass (`48 
+passed`), the frontend TypeScript/Vite build passes, and the search route is covered 
+for a query such as `show camera 1 after 9am`. Options B and C remain intentionally 
+unimplemented because multi-image graph correlation and real tamper/deepfake models 
+would need additional evidence and validation.
