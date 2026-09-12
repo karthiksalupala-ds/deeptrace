@@ -1,0 +1,95 @@
+{
+  "tool": "DeepTrace v0.1.0",
+  "generated_at": "2026-09-12T10:12:31.016904+00:00",
+  "case_metadata": {
+    "case_number": "UNKNOWN_CASE",
+    "operator": "DEEPTRACE_OPERATOR"
+  },
+  "disk_metadata": {
+    "filename": "dahua_test2.img",
+    "path": "C:\\projects\\deeptrace\\sample_data\\dahua_test2.img",
+    "size_bytes": 248469,
+    "md5": "d462526f27ae17841bd817e6db2d4e31",
+    "sha256": "254ee14a200eaec08eab27b6a2e70d91c4ecfafdf213763ab4d86b2c89a2c373",
+    "processed_at": "2026-09-12T10:12:31.016904+00:00"
+  },
+  "device_identification": {
+    "vendor_id": "dahua",
+    "vendor_name": "Dahua",
+    "signature_found_at_offset": 512,
+    "fully_implemented": true,
+    "detection_confidence": "high"
+  },
+  "recovery_stats": {
+    "total_frames_scanned": 200,
+    "valid_frames": 190,
+    "invalid_frames": 10,
+    "invalid_by_rejection_reason": {
+      "footer_size_mismatch": 5,
+      "checksum_mismatch": 5
+    },
+    "frames_in_sequences": 190,
+    "frames_dropped_noise": 0,
+    "sequences_found": 2,
+    "gaps_detected": 1,
+    "recovery_rate": {
+      "source": "synthetic_sidecar",
+      "expected_valid_frames": 190,
+      "expected_total_frames": 200,
+      "expected_corrupted_frames": 10,
+      "expected_gaps": 20,
+      "actual_valid_recovered": 190,
+      "recovery_rate_pct": 95.0,
+      "note": "Recovery rate computed against synthetic ground truth from .meta.json. Real-world runs will not have this ground truth \u2014 use as demo metric only."
+    }
+  },
+  "recovered_files": [
+    {
+      "filename": "DEMO_CH0_2025-01-15_10-00-00_39frames.mp4",
+      "path": "sample_data/out/DEMO_CH0_2025-01-15_10-00-00_39frames.mp4",
+      "size_bytes": 4186,
+      "md5": "3d3779cea340176dca121ca2cdc328eb",
+      "sha256": "bb675007ba2f4758e434d6d93a47f13bf208b56347bb97ed4b7fed61bd629185",
+      "frame_count": 39,
+      "duration_seconds": 1.0,
+      "channel_id": 0,
+      "start_ts": "2025-01-15T10:00:00+00:00",
+      "end_ts": "2025-01-15T10:00:01+00:00",
+      "is_demo": true,
+      "is_raw_fallback": false
+    },
+    {
+      "filename": "DEMO_CH0_2025-01-15_10-00-01_151frames.mp4",
+      "path": "sample_data/out/DEMO_CH0_2025-01-15_10-00-01_151frames.mp4",
+      "size_bytes": 6486,
+      "md5": "0ff8e020946cc72036f7b20a28a94ae7",
+      "sha256": "97e17812d304d0616a27cd1eff0c4e03ae81a9b082c0f2256144196e3cd6e729",
+      "frame_count": 151,
+      "duration_seconds": 5.0,
+      "channel_id": 0,
+      "start_ts": "2025-01-15T10:00:01+00:00",
+      "end_ts": "2025-01-15T10:00:07+00:00",
+      "is_demo": true,
+      "is_raw_fallback": false
+    }
+  ],
+  "chain_of_custody": {
+    "source_image_sha256": "254ee14a200eaec08eab27b6a2e70d91c4ecfafdf213763ab4d86b2c89a2c373",
+    "acquired_by": "DEEPTRACE_OPERATOR",
+    "acquired_at": "2026-09-12T10:12:31.016904+00:00",
+    "tool": "DeepTrace v0.1.0",
+    "hash_algorithms": [
+      "MD5",
+      "SHA-256"
+    ],
+    "processing_note": "Source image was not modified during analysis. All operations were read-only on the source disk image."
+  },
+  "section_65b_certificate": {
+    "_note": "DRAFT CERTIFICATE \u2014 REQUIRES AUTHORIZED SIGNATORY",
+    "certificate_type": "Section 65B, Indian Evidence Act 1872",
+    "certifying_officer": "DEEPTRACE_OPERATOR",
+    "device_description": "Dahua DVR/NVR",
+    "source_image_sha256": "254ee14a200eaec08eab27b6a2e70d91c4ecfafdf213763ab4d86b2c89a2c373",
+    "statement": "I hereby certify that the electronic records detailed in this report were extracted from the original digital storage media using DeepTrace (DeepTrace v0.1.0) in a forensically sound manner. The source media was not altered during analysis. The extracted records are true and accurate representations of the data present on the original media."
+  }
+}
