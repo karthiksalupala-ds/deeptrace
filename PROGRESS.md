@@ -21,10 +21,11 @@
 - [2026-09-12] Phase 2: engine/report.py — JSON forensic report builder: disk SHA-256, rejection_reason aggregation, ground-truth recovery rate via sidecar, and Section 65B stub
 - [2026-09-12] Phase 2: engine/pipeline.py — single entrypoint (run_recovery) tying device ID, parser, sequencer, mp4 writer, and report builder. Supports --demo mode
 - [2026-09-12] Phase 2: Test suite fully updated. Pipeline tested E2E with demo dataset (100% recovery rate vs ground truth sidecar). All 41 tests passing
+- [2026-09-12] Parser recovery fix: Hikvision/Dahua now retain truncated magic candidates as invalid FrameRecords; fragmented 200-frame E2E runs report 200 scanned, 190 valid, 10 invalid, and 95% recovery against ground truth
+- [2026-09-12] Phase 3: FastAPI backend implemented with in-memory jobs, local `backend/data/{job_id}` storage, upload/demo processing, status/report/file routes, CORS, validation, and API tests
 
 
 ## Next up
-- Phase 3: FastAPI backend (main.py, jobs.py, storage.py, models.py)
 - Phase 4: React + TypeScript frontend (light AXIOM theme)
 - Phase 6: ML module (OpenCV motion detection)
 - Phase 8: docs/ deliverables
@@ -35,18 +36,21 @@
 - Phase 1: complete, 5 vendor plugins registered (Hikvision+Dahua full, 
   CP Plus→Dahua/Godrej→Hikvision delegate, Uniview/Honeywell/Matrix stub-only, 
   TP-Link reclassified as standard-FS/conventional-carving tier).
-- Phase 2: temporal_sequencer.py, mp4_writer.py, report.py, pipeline.py written, 
-  41 tests passing. KNOWN BUG (unresolved): corrupted frames are being dropped 
-  during parse instead of yielded as valid=False with rejection_reason — 
-  E2E run showed 190/190 scanned=valid (should be 200 scanned, ~190 valid, 
-  10 with rejection reasons). Recovery rate calc also wrong as a result 
-  (showing 100% against wrong denominator). Also need to confirm gap 
-  detection fires when fragmentation=True (last run showed 0 gaps, unclear 
-  if that test used fragmentation).
+- Phase 2: temporal_sequencer.py, mp4_writer.py, report.py, pipeline.py written. 
+  Parser accounting bug resolved: fragmented E2E runs now show 200 scanned, 
+  190 valid, 10 invalid, and 95% recovery against the 200-frame sidecar 
+  denominator. Dahua rejection buckets are checksum_mismatch/footer_size_mismatch; 
+  Hikvision uses invalid_frame_size. Physical zero-filled fragmentation does not 
+  itself create a temporal gap when timestamps and frame numbers remain continuous.
+- Phase 3: FastAPI routes are available at `/api/jobs`, `/api/jobs/{job_id}`, 
+  `/api/jobs/{job_id}/files/{filename}`, `/api/jobs/{job_id}/report.json`, 
+  `/api/jobs`, and `/api/demo/generate`; `/api/v1` aliases remain for compatibility. 
+  Local storage is zero-config under `backend/data`. Synthetic uploads may produce 
+  `.raw` fallback artifacts because their fake H.264 payloads are not muxable; demo 
+  jobs generate playable MP4s.
 - Switching from Antigravity (credits exhausted) to [next tool].
 
 ## Next up
-Fix the corrupted-frame-dropping bug in the Hikvision/Dahua parsers before 
-touching Phase 3. Re-run E2E with fragmentation=True and verify: 
-total_scanned=200, rejection_reason buckets populated, recovery_rate < 100% 
-computed against .meta.json ground truth, gaps_detected > 0.
+Proceed to Phase 4. Phase 3 validation is complete: the full suite passes 46 tests 
+with one Starlette/httpx deprecation warning. E2E fragmentation validation remains 
+at total_scanned=200, populated rejection_reason buckets, and recovery_rate=95%.

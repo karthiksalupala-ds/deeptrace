@@ -138,6 +138,8 @@ def write_mp4(
                 "Writing .raw fallback. FFmpeg stderr: %s",
                 time_str, stderr[-300:],
             )
+            if os.path.exists(mp4_path):
+                os.unlink(mp4_path)
             raw_path = os.path.join(output_dir, base_name + ".raw")
             shutil.copy2(temp_h264, raw_path)
             out_path = raw_path

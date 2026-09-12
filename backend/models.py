@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import Optional, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -8,17 +8,20 @@ from pydantic import BaseModel
 class JobStatus(str, Enum):
     QUEUED = "queued"
     PROCESSING = "processing"
-    COMPLETED = "completed"
-    ERROR = "error"
+    DONE = "done"
+    FAILED = "failed"
 
 
-class JobResponse(BaseModel):
+class Job(BaseModel):
     job_id: str
-    status: JobStatus
-    progress: float
-    error_message: Optional[str] = None
+    filename: str
+    status: JobStatus = JobStatus.QUEUED
     created_at: datetime.datetime
-    completed_at: Optional[datetime.datetime] = None
+    report: dict | None = None
+    error: str | None = None
+
+
+JobResponse = Job
 
 
 class DemoGenerateRequest(BaseModel):

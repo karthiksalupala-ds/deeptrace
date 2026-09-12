@@ -40,6 +40,7 @@ class VendorRegistry:
         """Return metadata for all registered vendors (for API/UI)."""
         return [
             {
+                "id": p.vendor_id,
                 "vendor_id": p.vendor_id,
                 "vendor_name": p.vendor_name,
                 "vendor_description": p.vendor_description,

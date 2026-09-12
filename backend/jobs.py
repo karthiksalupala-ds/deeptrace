@@ -1,62 +1,72 @@
 import datetime
 import logging
-import traceback
-from typing import Dict, Any
+import threading
+import uuid
+from pathlib import Path
 
 from engine.pipeline import run_recovery
-from .models import JobStatus, JobResponse
-from .storage import get_job_dir
+
+from .models import Job, JobStatus
+from .storage import get_output_dir
 
 logger = logging.getLogger(__name__)
 
-# Global in-memory job store for zero-config MVP
-_JOB_STORE: Dict[str, JobResponse] = {}
+_JOB_STORE: dict[str, Job] = {}
+_JOB_INPUTS: dict[str, tuple[str, bool]] = {}
+_JOB_LOCK = threading.Lock()
 
 
-def create_job(job_id: str) -> JobResponse:
-    job = JobResponse(
+def create_job(upload_path: str, filename: str | None = None, generate_demo_mp4s: bool = False) -> str:
+    """Register an input path and return its new job ID."""
+    job_id = uuid.uuid4().hex
+    job = Job(
         job_id=job_id,
-        status=JobStatus.QUEUED,
-        progress=0.0,
+        filename=filename or Path(upload_path).name,
         created_at=datetime.datetime.now(tz=datetime.timezone.utc),
     )
-    _JOB_STORE[job_id] = job
-    return job
+    with _JOB_LOCK:
+        _JOB_STORE[job_id] = job
+        _JOB_INPUTS[job_id] = (upload_path, generate_demo_mp4s)
+    return job_id
 
 
-def get_job(job_id: str) -> JobResponse | None:
-    return _JOB_STORE.get(job_id)
+def get_job(job_id: str) -> Job | None:
+    with _JOB_LOCK:
+        return _JOB_STORE.get(job_id)
 
 
-def get_all_jobs() -> list[JobResponse]:
-    return list(_JOB_STORE.values())
+def get_all_jobs() -> list[Job]:
+    with _JOB_LOCK:
+        return list(_JOB_STORE.values())
 
 
-def run_job_async(job_id: str, image_path: str, is_demo_scenario: bool = False):
-    """
-    Background worker that executes the core forensic pipeline.
-    """
-    job = _JOB_STORE.get(job_id)
-    if not job:
-        logger.error(f"Job {job_id} not found when starting worker.")
-        return
+def set_job_input(job_id: str, image_path: str, generate_demo_mp4s: bool = False) -> None:
+    with _JOB_LOCK:
+        _JOB_INPUTS[job_id] = (image_path, generate_demo_mp4s)
 
-    job.status = JobStatus.PROCESSING
-    job.progress = 10.0
 
+def run_job_async(job_id: str) -> None:
+    """Run the synchronous recovery pipeline in FastAPI's worker thread."""
+    with _JOB_LOCK:
+        job = _JOB_STORE.get(job_id)
+        input_info = _JOB_INPUTS.get(job_id)
+        if job is None or input_info is None:
+            logger.error("Job %s was not registered before processing", job_id)
+            return
+        job.status = JobStatus.PROCESSING
+
+    image_path, generate_demo_mp4s = input_info
     try:
-        output_dir = get_job_dir(job_id)
-        # DeepTrace pipeline is synchronous right now, so we just call it.
-        # It's blocking the worker thread, but FastAPI BackgroundTasks run in a separate threadpool.
-        run_recovery(image_path, output_dir, demo_mode=is_demo_scenario)
-
-        job.status = JobStatus.COMPLETED
-        job.progress = 100.0
-        job.completed_at = datetime.datetime.now(tz=datetime.timezone.utc)
-    except Exception as e:
-        logger.error(f"Job {job_id} failed: {e}")
-        logger.error(traceback.format_exc())
-        job.status = JobStatus.ERROR
-        job.progress = 0.0
-        job.error_message = str(e)
-        job.completed_at = datetime.datetime.now(tz=datetime.timezone.utc)
+        report = run_recovery(
+            image_path=image_path,
+            out_dir=get_output_dir(job_id),
+            generate_demo_mp4s=generate_demo_mp4s,
+        )
+        with _JOB_LOCK:
+            job.report = report
+            job.status = JobStatus.DONE
+    except Exception as exc:
+        logger.exception("Recovery job %s failed", job_id)
+        with _JOB_LOCK:
+            job.status = JobStatus.FAILED
+            job.error = str(exc)
