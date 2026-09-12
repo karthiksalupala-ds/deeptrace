@@ -90,7 +90,7 @@ class HikvisionParser(BaseVendorParser):
             data = fh.read()  # MVP: read entire image; TODO(karthik): chunked for multi-TB
 
         offset = 0
-        while offset <= len(data) - HEADER_SIZE:
+        while offset < len(data):
             # Fast scan: find next magic occurrence
             idx = data.find(HIKVISION_MAGIC_BYTES, offset)
             if idx == -1:

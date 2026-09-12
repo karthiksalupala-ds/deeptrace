@@ -47,6 +47,7 @@ def test_upload_poll_report_and_download(tmp_path):
     assert body["status"] == "done"
     assert body["report"] is not None
     assert "recovery_stats" in body["report"]
+    assert body["report"]["recovery_stats"]["rejected_frames_by_reason"] == {}
 
     report = client.get(f"/api/jobs/{job_id}/report.json")
     assert report.status_code == 200

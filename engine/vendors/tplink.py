@@ -1,10 +1,9 @@
 """
 vendors/tplink.py — TP-Link (VIGI / Tapo) detection-only stub.
 
-TP-Link's VIGI and Tapo NVR/DVR product lines are consumer-grade devices
-running embedded Linux with standard ext4 or FAT file systems for storage.
-Unlike Hikvision/Dahua, there is no published evidence of a proprietary
-frame format; video is typically stored in standard MP4/AVI containers.
+TP-Link's VIGI product line is an official recorder family. This project did
+not establish its raw storage filesystem or whether exported video containers
+are sufficient for disk-level recovery.
 
 Current status: DETECTION ONLY.
 parse_frames() raises NotImplementedError — standard container extraction
@@ -33,9 +32,8 @@ class TpLinkParser(BaseVendorParser):
     vendor_id = "tplink"
     vendor_name = "TP-Link VIGI"
     vendor_description = (
-        "TP-Link VIGI/Tapo NVR — consumer-grade devices; video stored in "
-        "standard containers on ext4/FAT. Detection only; standard container "
-        "extraction is roadmap."
+        "TP-Link VIGI/Tapo NVR — recorder marker detection only; raw storage "
+        "format and container extraction require device samples."
     )
 
     def is_fully_implemented(self) -> bool:

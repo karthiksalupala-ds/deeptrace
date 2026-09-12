@@ -4,15 +4,11 @@ vendors/godrej.py — Godrej Security DVR/NVR parser.
 Godrej Security Solutions (Godrej & Boyce Manufacturing Co., India) sells
 DVR/NVR products under its security division. Published evidence:
 
-  - Godrej's entry- and mid-range DVR/NVR product lines are widely
-    documented in Indian security trade press as OEM'd from Hikvision
-    (hardware and firmware, including file system format).
-  - Godrej-branded units often carry the Hikvision embedded Linux firmware
-    with cosmetic UI changes.
-  - Source: Godrej product spec sheets, distributor listings (e.g.
-    IndiaMART), and Indian security industry publications.
-  - NOTE: Premium/enterprise Godrej Security products may use independent
-    designs. This detection only applies to Hikvision-derived models.
+    - Public product branding and reseller listings do not establish that a
+        Godrej model uses the Hikvision filesystem. The relationship remains an
+        unvalidated hypothesis.
+    - NOTE: This adapter is detect-only until a citable source and real image
+        validate a specific model family.
 
 Detection: look for HIKVISION@HANGZHOU signature (shared FS on OEM units)
            or explicit Godrej marker strings.
@@ -47,14 +43,18 @@ class GodrejParser(BaseVendorParser):
     vendor_id = "godrej"
     vendor_name = "Godrej Security"
     vendor_description = (
-        "Godrej Security Solutions (Godrej & Boyce, India) — entry/mid-range "
-        "lines use Hikvision-derived file systems; full frame recovery via "
-        "Hikvision parser delegation."
+        "Godrej Security Solutions (Godrej & Boyce, India) — recorder marker "
+        "detection with provisional Hikvision delegation; real-image validation "
+        "is still required."
     )
 
     def __init__(self) -> None:
         super().__init__()
         self._hik_parser = HikvisionParser()
+
+    def is_fully_implemented(self) -> bool:
+        """Return False until a real Godrej image validates the delegation."""
+        return False
 
     def detect(self, image_path: str) -> tuple[bool, Optional[int]]:
         file_size = os.path.getsize(image_path)

@@ -2,10 +2,8 @@
 vendors/uniview.py — Uniview detection-only stub.
 
 Uniview (Zhejiang Uniview Technologies Co., Ltd., Hangzhou, founded 2005)
-is an independent Chinese CCTV manufacturer. While Uniview was originally
-spun out of talent that worked in the broader Hangzhou surveillance
-ecosystem, it uses its own proprietary DVR/NVR file system — NOT derived
-from Hikvision or Dahua formats.
+is presented by its official site as its own video-security provider. This
+project has not established its raw DVR/NVR filesystem or an OEM relationship.
 
 Current status: DETECTION ONLY.
 parse_frames() raises NotImplementedError — Uniview file system parsing
@@ -34,9 +32,8 @@ class UniviewParser(BaseVendorParser):
     vendor_id = "uniview"
     vendor_name = "Uniview"
     vendor_description = (
-        "Uniview (Zhejiang Uniview Technologies, China) — independent "
-        "manufacturer with proprietary file system. Detection only in MVP; "
-        "deep parsing is roadmap."
+        "Uniview (Zhejiang Uniview Technologies, China) — recorder marker "
+        "detection only; raw filesystem and parser remain undocumented here."
     )
 
     def is_fully_implemented(self) -> bool:

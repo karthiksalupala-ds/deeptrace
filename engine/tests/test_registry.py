@@ -95,8 +95,8 @@ class TestVendorRegistry:
         impl_map = {v["vendor_id"]: v["is_fully_implemented"] for v in vendors}
         assert impl_map["hikvision"] is True
         assert impl_map["dahua"] is True
-        assert impl_map["cpplus"] is True
-        assert impl_map["godrej"] is True
+        assert impl_map["cpplus"] is False
+        assert impl_map["godrej"] is False
         assert impl_map["uniview"] is False
         assert impl_map["honeywell"] is False
         assert impl_map["tplink"] is False

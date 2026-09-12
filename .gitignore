@@ -59,3 +59,8 @@ Thumbs.db
 # Build output
 build/
 dist/
+
+# Project notes and submission documents (keep local; do not push)
+*.md
+docs/
+00_PROJECT_CONTEXT.md

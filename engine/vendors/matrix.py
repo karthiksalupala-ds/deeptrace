@@ -1,9 +1,9 @@
 """
 vendors/matrix.py — Matrix COSEC detection-only stub.
 
-Matrix Comsec Pvt. Ltd. (Vadodara, India) manufactures the COSEC range of
-DVR/NVR products. Matrix is an independent Indian manufacturer with its own
-embedded firmware and file system — not derived from Hikvision or Dahua.
+Matrix Comsec's official site presents its own enterprise video-surveillance
+and NVR products. This project did not establish the raw filesystem or an OEM
+relationship for those products.
 
 Current status: DETECTION ONLY.
 parse_frames() raises NotImplementedError — Matrix COSEC file system
@@ -31,9 +31,9 @@ class MatrixParser(BaseVendorParser):
     vendor_id = "matrix"
     vendor_name = "Matrix COSEC"
     vendor_description = (
-        "Matrix Comsec (Vadodara, India) COSEC DVR/NVR — independent "
-        "manufacturer with undocumented proprietary file system. Detection "
-        "only; deep parsing requires hardware access. Roadmap item."
+        "Matrix Comsec (Vadodara, India) COSEC DVR/NVR — recorder marker "
+        "detection only; raw filesystem is undocumented here and requires "
+        "hardware access."
     )
 
     def is_fully_implemented(self) -> bool:

@@ -1,11 +1,9 @@
 """
 vendors/honeywell.py — Honeywell Security detection-only stub.
 
-Honeywell Security (now part of Resideo Technologies) sells DVR/NVR
-products under the MAXPRO brand. Research (Saheed et al., "CARVE:
-Recovering and Reconstructing Deleted H.264/H.265 Video from Honeywell
-Surveillance Systems") documents a proprietary Honeywell file system
-distinct from Hikvision/Dahua formats.
+Honeywell Security / MAXPRO is a recorder product family. The project
+research notes reference CARVE as a lead for future Honeywell recovery, but
+this pass did not verify a primary accessible copy or filesystem details.
 
 Current status: DETECTION ONLY.
 parse_frames() raises NotImplementedError — the CARVE paper approach
@@ -33,9 +31,8 @@ class HoneywellParser(BaseVendorParser):
     vendor_id = "honeywell"
     vendor_name = "Honeywell Security"
     vendor_description = (
-        "Honeywell Security / Resideo MAXPRO series — proprietary file system "
-        "documented in CARVE paper. Detection only in MVP; CARVE-based recovery "
-        "is roadmap."
+        "Honeywell Security / Resideo MAXPRO series — detection only; CARVE is "
+        "a research lead and raw filesystem recovery is roadmap."
     )
 
     def is_fully_implemented(self) -> bool:

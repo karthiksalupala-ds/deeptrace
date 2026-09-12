@@ -147,7 +147,7 @@ class DahuaParser(BaseVendorParser):
             data = fh.read()  # TODO(karthik): chunked reads for multi-TB images
 
         offset = 0
-        while offset <= len(data) - FRAME_OVERHEAD:
+        while offset < len(data):
             idx = data.find(DHAV_HEADER_MAGIC, offset)
             if idx == -1:
                 break

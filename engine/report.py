@@ -116,7 +116,20 @@ def build_report(
     # Recovery rate vs ground truth from sidecar (synthetic data only)
     meta = _load_meta_json(image_path)
     recovery_rate_info: dict[str, Any] = {
-        "note": "Ground truth unavailable (real-world image — no .meta.json sidecar)."
+        "source": "scanned_frames",
+        "recovery_rate_basis": "scanned_only",
+        "expected_valid_frames": None,
+        "expected_total_frames": len(all_frames),
+        "expected_corrupted_frames": None,
+        "expected_gaps": None,
+        "actual_valid_recovered": len(valid_frames),
+        "recovery_rate_pct": round(
+            len(valid_frames) / len(all_frames) * 100, 2
+        ) if all_frames else 0.0,
+        "note": (
+            "Recovery rate uses yielded frame records because no synthetic "
+            "ground-truth sidecar is available."
+        ),
     }
     if meta:
         expected_valid = meta.get("valid_frames", 0)
@@ -125,6 +138,7 @@ def build_report(
         rate = (actual_valid / expected_total * 100) if expected_total else 0.0
         recovery_rate_info = {
             "source": "synthetic_sidecar",
+            "recovery_rate_basis": "ground_truth",
             "expected_valid_frames": expected_valid,
             "expected_total_frames": expected_total,
             "expected_corrupted_frames": meta.get("corrupted_frames", 0),
@@ -142,6 +156,7 @@ def build_report(
         "valid_frames": len(valid_frames),
         "invalid_frames": len(invalid_frames),
         "invalid_by_rejection_reason": rejection_counts,
+        "rejected_frames_by_reason": rejection_counts,
         "frames_in_sequences": seq_stats.frames_in_sequences,
         "frames_dropped_noise": seq_stats.frames_dropped_noise,
         "sequences_found": seq_stats.sequences_found,

@@ -4,13 +4,10 @@ vendors/cpplus.py — CP Plus DVR/NVR parser.
 CP Plus (brand of Aditya Infotech Ltd., India) is the largest CCTV brand
 in India by market share. Published evidence:
 
-  - Aditya Infotech Ltd. is a publicly declared Dahua Technology OEM/channel
-    partner and has rebranded/co-manufactured Dahua hardware under the CP Plus
-    brand across its entry- and mid-range product lines.
-  - Source: Aditya Infotech investor presentations, distributor agreements
-    (publicly available), and trade press (e.g. SecurityWorldMarket.com).
-  - NOTE: Premium and enterprise CP Plus lines may use independent designs.
-    This detection only applies to Dahua-derived models.
+  - Public product branding alone does not establish that a CP Plus model uses
+    the Dahua filesystem. The relationship remains an unvalidated hypothesis.
+  - NOTE: This adapter is detect-only until a citable source and real image
+    validate a specific model family.
 
 Detection strategy:
   - Check for Dahua DHFS4.1 filesystem signature (shared FS on OEM units)
@@ -47,14 +44,17 @@ class CpPlusParser(BaseVendorParser):
     vendor_id = "cpplus"
     vendor_name = "CP Plus"
     vendor_description = (
-        "CP Plus (Aditya Infotech, India) — largest CCTV brand in India. "
-        "Entry/mid-range lines use Dahua-derived file systems; full frame "
-        "recovery via Dahua parser delegation."
+        "CP Plus (Aditya Infotech, India) — recorder marker detection with "
+        "provisional Dahua delegation; real-image validation is still required."
     )
 
     def __init__(self) -> None:
         super().__init__()
         self._dahua_parser = DahuaParser()
+
+    def is_fully_implemented(self) -> bool:
+      """Return False until a real CP Plus image validates the delegation."""
+      return False
 
     def detect(self, image_path: str) -> tuple[bool, Optional[int]]:
         """

@@ -173,3 +173,12 @@ class TestHikvisionParseFrames:
         frames = list(HikvisionParser().parse_frames(img))
         valid = [f for f in frames if f.valid]
         assert len(valid) >= meta["valid_frames"]
+
+    def test_corruption_preserves_total_yielded_frame_count(self, tmp_path):
+        img = str(tmp_path / "hikvision_200_corrupt.img")
+        meta = generate_hikvision_scenario(img, num_frames=200, num_corrupted=10, num_gaps=20)
+        frames = list(HikvisionParser().parse_frames(img))
+        invalid = [frame for frame in frames if not frame.valid]
+        assert len(frames) == meta["total_frames"]
+        assert len(invalid) == meta["corrupted_frames"]
+        assert all(frame.rejection_reason for frame in invalid)

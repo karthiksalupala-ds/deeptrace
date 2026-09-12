@@ -32,12 +32,14 @@ export interface Report {
     valid_frames: number
     invalid_frames: number
     invalid_by_rejection_reason: Record<string, number>
+    rejected_frames_by_reason: Record<string, number>
     frames_in_sequences: number
     frames_dropped_noise: number
     sequences_found: number
     gaps_detected: number
     recovery_rate: {
       recovery_rate_pct?: number
+      recovery_rate_basis: 'ground_truth' | 'scanned_only'
       actual_valid_recovered?: number
       expected_total_frames?: number
       expected_corrupted_frames?: number
