@@ -20,6 +20,7 @@ def run_recovery(
     generate_demo_mp4s: bool = False,
     operator_name: str = "DEEPTRACE_OPERATOR",
     case_number: str = "UNKNOWN_CASE",
+    prev_entry_hash: str | None = None,
 ) -> dict[str, Any]:
     """
     Run the full Phase 1 + Phase 2 DeepTrace pipeline on a disk image.
@@ -81,6 +82,7 @@ def run_recovery(
         recovered_files=recovered_files,
         operator_name=operator_name,
         case_number=case_number,
+        prev_entry_hash=prev_entry_hash,
     )
     
     report_path = os.path.join(out_dir, "report.json")

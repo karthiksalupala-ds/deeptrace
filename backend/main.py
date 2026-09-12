@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from engine.registry import build_default_registry
 from engine.pdf_report import render_pdf
 from engine.search import search_recovered_files
+from engine.ml_detector import detect_motion
 from engine.synthetic_image_gen import generate_dahua_scenario, generate_hikvision_scenario
 
 from .jobs import create_job, get_all_jobs, get_job, run_job_async, set_job_input
@@ -129,6 +130,21 @@ def search_job_evidence(job_id: str, q: str = "") -> dict:
         "match_method": "metadata terms, camera/channel number, vendor, and timestamp expressions",
         "files": search_recovered_files(report, q),
     }
+
+
+@app.get("/api/jobs/{job_id}/motion/{filename}")
+def analyze_motion(job_id: str, filename: str) -> dict:
+    _require_job(job_id)
+    safe_name = Path(filename).name
+    if safe_name != filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    file_path = Path(get_output_dir(job_id)) / safe_name
+    if not file_path.is_file() or file_path.suffix.lower() != ".mp4":
+        raise HTTPException(status_code=404, detail="Playable MP4 not found")
+    try:
+        return detect_motion(str(file_path))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.get("/api/jobs/{job_id}/report.pdf")

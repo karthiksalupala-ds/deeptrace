@@ -47,6 +47,7 @@ export interface Report {
     }
   }
   recovered_files: RecoveredFile[]
+  sequences: Sequence[]
   chain_of_custody: {
     source_image_sha256: string
     acquired_by: string
@@ -54,8 +55,19 @@ export interface Report {
     tool: string
     hash_algorithms: string[]
     processing_note: string
+    prev_entry_hash: string | null
   }
   section_65b_certificate?: Record<string, string>
+}
+
+export interface Sequence {
+  vendor_id: string
+  channel_id: number
+  frame_count: number
+  start_ts: string
+  end_ts: string
+  gap_count: number
+  gap_before: boolean
 }
 
 export interface RecoveredFile {
@@ -106,3 +118,7 @@ export const searchEvidence = (jobId: string, query: string) =>
   request<{ query: string; match_method: string; files: RecoveredFile[] }>(
     `/api/jobs/${jobId}/search?q=${encodeURIComponent(query)}`,
   )
+export const analyzeMotion = (jobId: string, filename: string) =>
+  request<{ method: string; threshold: number; motion_events: MotionEvent[] }>(`/api/jobs/${jobId}/motion/${encodeURIComponent(filename)}`)
+
+export interface MotionEvent { start_sec: number; end_sec: number; intensity: number }

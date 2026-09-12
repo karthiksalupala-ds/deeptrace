@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import json
 import logging
 import threading
 import uuid
@@ -14,6 +16,7 @@ logger = logging.getLogger(__name__)
 _JOB_STORE: dict[str, Job] = {}
 _JOB_INPUTS: dict[str, tuple[str, bool]] = {}
 _JOB_LOCK = threading.Lock()
+_LAST_CUSTODY_HASH: str | None = None
 
 
 def create_job(upload_path: str, filename: str | None = None, generate_demo_mp4s: bool = False) -> str:
@@ -47,6 +50,7 @@ def set_job_input(job_id: str, image_path: str, generate_demo_mp4s: bool = False
 
 def run_job_async(job_id: str) -> None:
     """Run the synchronous recovery pipeline in FastAPI's worker thread."""
+    global _LAST_CUSTODY_HASH
     with _JOB_LOCK:
         job = _JOB_STORE.get(job_id)
         input_info = _JOB_INPUTS.get(job_id)
@@ -56,13 +60,20 @@ def run_job_async(job_id: str) -> None:
         job.status = JobStatus.PROCESSING
 
     image_path, generate_demo_mp4s = input_info
+    with _JOB_LOCK:
+        previous_hash = _LAST_CUSTODY_HASH
     try:
         report = run_recovery(
             image_path=image_path,
             out_dir=get_output_dir(job_id),
             generate_demo_mp4s=generate_demo_mp4s,
+            prev_entry_hash=previous_hash,
         )
+        report_hash = hashlib.sha256(
+            json.dumps(report, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
         with _JOB_LOCK:
+            _LAST_CUSTODY_HASH = report_hash
             job.report = report
             job.status = JobStatus.DONE
     except Exception as exc:

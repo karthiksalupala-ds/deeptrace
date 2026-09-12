@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
+import logging
 import os
 from collections import Counter
 from typing import Any, Optional
@@ -24,6 +25,7 @@ from .mp4_writer import RecoveredFile
 from .temporal_sequencer import FrameSequence, SequencingStats
 
 TOOL_VERSION = "DeepTrace v0.1.0"
+logger = logging.getLogger(__name__)
 
 
 def _sha256_file(path: str) -> str:
@@ -64,6 +66,7 @@ def build_report(
     recovered_files: list[RecoveredFile],
     operator_name: str = "DEEPTRACE_OPERATOR",
     case_number: str = "UNKNOWN_CASE",
+    prev_entry_hash: Optional[str] = None,
 ) -> dict[str, Any]:
     """
     Assemble the full DeepTrace forensic JSON report.
@@ -151,6 +154,14 @@ def build_report(
             ),
         }
 
+    logger.info(
+        "Recovery rate: numerator=%d denominator=%d basis=%s rate_pct=%.2f",
+        len(valid_frames),
+        recovery_rate_info["expected_total_frames"],
+        recovery_rate_info["recovery_rate_basis"],
+        recovery_rate_info["recovery_rate_pct"],
+    )
+
     recovery_stats = {
         "total_frames_scanned": len(all_frames),
         "valid_frames": len(valid_frames),
@@ -202,6 +213,18 @@ def build_report(
         "device_identification": device_ident,
         "recovery_stats": recovery_stats,
         "recovered_files": recovered_file_list,
+        "sequences": [
+            {
+                "vendor_id": sequence.vendor_id,
+                "channel_id": sequence.channel_id,
+                "frame_count": sequence.frame_count,
+                "start_ts": sequence.start_ts_utc.isoformat(),
+                "end_ts": sequence.end_ts_utc.isoformat(),
+                "gap_count": sequence.gap_count,
+                "gap_before": sequence.gap_before,
+            }
+            for sequence in sequences
+        ],
         "chain_of_custody": {
             "source_image_sha256": sha256,
             "acquired_by": operator_name,
@@ -212,6 +235,7 @@ def build_report(
                 "Source image was not modified during analysis. "
                 "All operations were read-only on the source disk image."
             ),
+            "prev_entry_hash": prev_entry_hash,
         },
         "section_65b_certificate": {
             "_note": "DRAFT CERTIFICATE — REQUIRES AUTHORIZED SIGNATORY",
