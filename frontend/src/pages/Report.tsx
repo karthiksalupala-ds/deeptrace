@@ -1,0 +1,17 @@
+import { Check, Copy, Download, FileText, ShieldCheck } from 'lucide-react'
+import { pdfReportUrl, Report as ReportData } from '../lib/api'
+
+export function Report({ report, jobId }: { report: ReportData; jobId: string }) {
+  const copy = (value: string) => void navigator.clipboard?.writeText(value)
+  return <div className="page report-page">
+    <div className="page-title-row"><div><span className="section-kicker">Forensic report</span><h1>Case findings</h1><p>Generated {new Date(report.generated_at).toLocaleString()} · {report.tool}</p></div><a className="secondary-button" href={pdfReportUrl(jobId)} download><Download size={16} /> Download PDF Report</a></div>
+    <div className="report-layout">
+      <section className="report-card"><Heading icon={<FileText size={18} />} title="Disk metadata" /><DataRows rows={[["Source filename", report.disk_metadata.filename], ["Image size", `${(report.disk_metadata.size_bytes / 1024 / 1024).toFixed(2)} MB`], ["Processed", new Date(report.disk_metadata.processed_at).toLocaleString()], ["MD5", report.disk_metadata.md5], ["SHA-256", report.disk_metadata.sha256]]} monoKeys={['MD5', 'SHA-256']} onCopy={copy} /></section>
+      <section className="report-card"><Heading icon={<ShieldCheck size={18} />} title="Device identification" /><DataRows rows={[["Manufacturer", report.device_identification.vendor_name], ["Confidence", report.device_identification.detection_confidence], ["Signature offset", String(report.device_identification.signature_found_at_offset ?? '—')], ["Parser status", report.device_identification.fully_implemented ? 'Fully implemented' : 'Detection only']]} /></section>
+      <section className="report-card wide"><Heading icon={<Check size={18} />} title="Recovery statistics" /><DataRows rows={[["Total frames scanned", String(report.recovery_stats.total_frames_scanned)], ["Valid frames", String(report.recovery_stats.valid_frames)], ["Rejected frames", String(report.recovery_stats.invalid_frames)], ["Frames in sequences", String(report.recovery_stats.frames_in_sequences)], ["Gaps detected", String(report.recovery_stats.gaps_detected)], ["Recovery rate", `${report.recovery_stats.recovery_rate.recovery_rate_pct ?? 'N/A'}%`]]} /><div className="rejection-list"><span className="section-kicker">Rejection reasons</span>{Object.entries(report.recovery_stats.invalid_by_rejection_reason).map(([reason, count]) => <div key={reason}><span>{reason}</span><strong>{count}</strong></div>)}</div></section>
+      <section className="report-card wide"><Heading icon={<ShieldCheck size={18} />} title="Chain of custody" /><p className="custody-copy">{report.chain_of_custody.processing_note}</p><DataRows rows={[["Acquired by", report.chain_of_custody.acquired_by], ["Acquired at", new Date(report.chain_of_custody.acquired_at).toLocaleString()], ["Tool", report.chain_of_custody.tool], ["Hash algorithms", report.chain_of_custody.hash_algorithms.join(' · ')]]} /></section>
+    </div>
+  </div>
+}
+function Heading({ icon, title }: { icon: React.ReactNode; title: string }) { return <div className="report-card-heading">{icon}<h2>{title}</h2></div> }
+function DataRows({ rows, monoKeys = [], onCopy }: { rows: string[][]; monoKeys?: string[]; onCopy?: (value: string) => void }) { return <dl className="data-rows">{rows.map(([key, value]) => <div key={key}><dt>{key}</dt><dd className={monoKeys.includes(key) ? 'mono' : ''}>{value}{onCopy && monoKeys.includes(key) && <button className="copy-inline" onClick={() => onCopy(value)} title="Copy"><Copy size={13} /></button>}</dd></div>)}</dl> }

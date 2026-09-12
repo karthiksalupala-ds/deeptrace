@@ -205,11 +205,12 @@ def build_report(
             "device_description": f"{device_ident['vendor_name']} DVR/NVR",
             "source_image_sha256": sha256,
             "statement": (
-                "I hereby certify that the electronic records detailed in this report "
-                "were extracted from the original digital storage media using DeepTrace "
-                f"({TOOL_VERSION}) in a forensically sound manner. The source media was "
-                "not altered during analysis. The extracted records are true and accurate "
-                "representations of the data present on the original media."
+                "DRAFT FACTUAL CONTENT FOR HUMAN REVIEW: the electronic records detailed "
+                "in this report were extracted from the original digital storage media "
+                f"using DeepTrace ({TOOL_VERSION}) in a read-only process. The source "
+                "media was not modified during analysis. The lawful custodian must "
+                "independently verify these facts and complete/sign any certificate. "
+                "DeepTrace does not issue or sign a Section 65B certificate."
             ),
         },
     }

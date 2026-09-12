@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
 
 from backend.main import app
 from engine.synthetic_image_gen import generate_hikvision_scenario
@@ -66,3 +67,38 @@ def test_empty_upload_is_rejected():
         files={"file": ("empty.img", b"", "application/octet-stream")},
     )
     assert response.status_code == 400
+
+
+def test_demo_pdf_report_is_a_signed_draft(tmp_path):
+    response = client.post(
+        "/api/demo/generate",
+        json={"vendor": "hikvision", "scenario": "clean"},
+    )
+    assert response.status_code == 200
+    job_id = response.json()["job_id"]
+
+    pdf_response = client.get(f"/api/jobs/{job_id}/report.pdf")
+    assert pdf_response.status_code == 200
+    assert pdf_response.headers["content-type"] == "application/pdf"
+    assert len(pdf_response.content) > 1000
+
+    pdf_path = tmp_path / "report.pdf"
+    pdf_path.write_bytes(pdf_response.content)
+    text = "".join(page.extract_text() or "" for page in PdfReader(str(pdf_path)).pages)
+    assert "DRAFT ONLY" in text
+    assert "DeepTrace cannot legally issue" in text
+
+
+def test_evidence_search_matches_camera_and_time():
+    response = client.post(
+        "/api/demo/generate",
+        json={"vendor": "hikvision", "scenario": "clean"},
+    )
+    assert response.status_code == 200
+    job_id = response.json()["job_id"]
+
+    result = client.get(f"/api/jobs/{job_id}/search", params={"q": "show camera 1 after 9am"})
+    assert result.status_code == 200
+    body = result.json()
+    assert body["match_method"].startswith("metadata")
+    assert body["files"]

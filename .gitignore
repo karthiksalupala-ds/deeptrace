@@ -1,0 +1,61 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+
+# Python caches and local tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local virtual environments
+.venv/
+venv/
+env/
+
+# Backend runtime data and generated reports/uploads
+backend/data/
+backend/.data/
+
+# Generated forensic/demo artifacts
+sample_data/out/
+sample_data/*.img
+sample_data/*.img.meta.json
+*.raw
+
+# Node dependencies and frontend build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Editor and OS files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test and coverage artifacts
+.pytest_cache/
+
+# Build output
+build/
+dist/

@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from engine.registry import build_default_registry
+from engine.pdf_report import render_pdf
+from engine.search import search_recovered_files
 from engine.synthetic_image_gen import generate_dahua_scenario, generate_hikvision_scenario
 
 from .jobs import create_job, get_all_jobs, get_job, run_job_async, set_job_input
@@ -113,6 +115,35 @@ def get_job_report(job_id: str) -> dict:
     if not report_path.exists():
         raise HTTPException(status_code=404, detail="Report not generated yet")
     return json.loads(report_path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/jobs/{job_id}/search")
+def search_job_evidence(job_id: str, q: str = "") -> dict:
+    _require_job(job_id)
+    report_path = Path(get_output_dir(job_id)) / "report.json"
+    if not report_path.exists():
+        raise HTTPException(status_code=404, detail="Report not generated yet")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    return {
+        "query": q,
+        "match_method": "metadata terms, camera/channel number, vendor, and timestamp expressions",
+        "files": search_recovered_files(report, q),
+    }
+
+
+@app.get("/api/jobs/{job_id}/report.pdf")
+def download_job_report_pdf(job_id: str) -> FileResponse:
+    _require_job(job_id)
+    job_dir = Path(get_output_dir(job_id))
+    report_path = job_dir / "report.json"
+    pdf_path = job_dir / "report.pdf"
+    if not report_path.exists():
+        raise HTTPException(status_code=404, detail="Report not generated yet")
+    try:
+        render_pdf(json.loads(report_path.read_text(encoding="utf-8")), str(pdf_path))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to render PDF report: {exc}") from exc
+    return FileResponse(path=pdf_path, filename=f"DeepTrace_{job_id[:8]}_report.pdf", media_type="application/pdf")
 
 
 @app.get("/api/jobs/{job_id}/files")

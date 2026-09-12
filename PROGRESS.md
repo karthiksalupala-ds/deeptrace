@@ -23,10 +23,11 @@
 - [2026-09-12] Phase 2: Test suite fully updated. Pipeline tested E2E with demo dataset (100% recovery rate vs ground truth sidecar). All 41 tests passing
 - [2026-09-12] Parser recovery fix: Hikvision/Dahua now retain truncated magic candidates as invalid FrameRecords; fragmented 200-frame E2E runs report 200 scanned, 190 valid, 10 invalid, and 95% recovery against ground truth
 - [2026-09-12] Phase 3: FastAPI backend implemented with in-memory jobs, local `backend/data/{job_id}` storage, upload/demo processing, status/report/file routes, CORS, validation, and API tests
+- [2026-09-12] Phase 4: React + TypeScript dashboard implemented with AXIOM-style shell, upload/demo flow, polling job view, recovery stats, table/grid artifact views, report view, history, and typed API client
+- [2026-09-12] Phase 5: reportlab PDF reports implemented with cover, recovery summary, evidence index, methodology appendix, and draft Section 65B content; PDF download route and frontend button wired
 
 
 ## Next up
-- Phase 4: React + TypeScript frontend (light AXIOM theme)
 - Phase 6: ML module (OpenCV motion detection)
 - Phase 8: docs/ deliverables
 
@@ -48,9 +49,22 @@
   Local storage is zero-config under `backend/data`. Synthetic uploads may produce 
   `.raw` fallback artifacts because their fake H.264 payloads are not muxable; demo 
   jobs generate playable MP4s.
+- Phase 4: Frontend runs at `http://127.0.0.1:5173/` via `npm --prefix frontend run dev`. 
+  Uploads and Hikvision/Dahua demo buttons call the Phase 3 API, jobs poll every 1.5s, 
+  and completed cases show recovery rate, valid/rejected frames, gaps, recovered 
+  artifacts, playable demo clips, downloads, hashes, report metadata, chain of custody, 
+  and case history. Pipeline substeps are elapsed-time UI simulation until SSE events 
+  exist; the PDF export button is now wired to the Phase 5 report endpoint.
+- Phase 5: `GET /api/jobs/{job_id}/report.pdf` renders a polished 5-page PDF on demand. 
+  It includes the case cover, recovery metrics, hashed evidence index, methodology, 
+  and a clearly marked Section 65B draft with blank examiner/signature fields. The 
+  PDF and JSON report explicitly state that DeepTrace cannot legally issue or sign 
+  the certificate; human review and signature are required. The frontend report page 
+  downloads the PDF directly.
 - Switching from Antigravity (credits exhausted) to [next tool].
 
 ## Next up
-Proceed to Phase 4. Phase 3 validation is complete: the full suite passes 46 tests 
-with one Starlette/httpx deprecation warning. E2E fragmentation validation remains 
-at total_scanned=200, populated rejection_reason buckets, and recovery_rate=95%.
+Proceed to Phase 6. Phase 5 validation is complete: backend/engine tests pass, the 
+generated PDF is 5 pages with the draft disclaimer, and the frontend TypeScript/Vite 
+build passes. PDF content is technical draft material only, not a completed legal 
+certificate.
