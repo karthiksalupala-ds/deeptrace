@@ -1,0 +1,8 @@
+pytest
+fastapi
+uvicorn
+httpx
+pypdf
+reportlab
+python-multipart
+opencv-python-headless

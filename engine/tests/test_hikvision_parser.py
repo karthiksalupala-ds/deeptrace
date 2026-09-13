@@ -9,6 +9,7 @@ import datetime
 
 import pytest
 
+from engine.pipeline import run_recovery
 from engine.vendors.hikvision import HikvisionParser
 from engine.synthetic_image_gen import (
     SyntheticImageGenerator,
@@ -182,3 +183,18 @@ class TestHikvisionParseFrames:
         assert len(frames) == meta["total_frames"]
         assert len(invalid) == meta["corrupted_frames"]
         assert all(frame.rejection_reason for frame in invalid)
+
+    def test_recovery_stats_total_scanned_matches_generated_total(self, tmp_path):
+        """Regression: total_scanned must equal the fully generated image total, even when some frames are corrupt."""
+        img = str(tmp_path / "hikvision_regression_200.img")
+        meta = generate_hikvision_scenario(img, num_frames=200, num_corrupted=10, num_gaps=20)
+        out_dir = str(tmp_path / "out")
+
+        report = run_recovery(img, out_dir, generate_demo_mp4s=False)
+        stats = report["recovery_stats"]
+
+        assert stats["total_frames_scanned"] == meta["total_frames"]
+        assert stats["valid_frames"] == meta["valid_frames"]
+        assert stats["invalid_frames"] == meta["corrupted_frames"]
+        assert stats["recovery_rate"]["expected_total_frames"] == meta["total_frames"]
+        assert stats["recovery_rate"]["actual_valid_recovered"] == meta["valid_frames"]

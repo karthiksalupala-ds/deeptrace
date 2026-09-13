@@ -1,0 +1,96 @@
+{
+  "tool": "DeepTrace v0.1.0",
+  "generated_at": "2026-09-13T15:27:26.283947+00:00",
+  "case_metadata": {
+    "case_number": "UNKNOWN_CASE",
+    "operator": "DEEPTRACE_OPERATOR"
+  },
+  "disk_metadata": {
+    "filename": "hik_reject.img",
+    "path": "C:\\projects\\deeptrace\\tmp_reject_check\\hik_reject.img",
+    "size_bytes": 245488,
+    "md5": "aed62c3a546321c392812a002f732ab0",
+    "sha256": "4ed7014817a1c16491c4e67b6be7a32a87e85c4b444cb0352606de41fd53c823",
+    "processed_at": "2026-09-13T15:27:26.283947+00:00"
+  },
+  "device_identification": {
+    "vendor_id": "hikvision",
+    "vendor_name": "Hikvision",
+    "signature_found_at_offset": 512,
+    "fully_implemented": true,
+    "detection_confidence": "high"
+  },
+  "recovery_stats": {
+    "total_frames_scanned": 200,
+    "valid_frames": 190,
+    "invalid_frames": 10,
+    "invalid_by_rejection_reason": {
+      "invalid_frame_size": 10
+    },
+    "rejected_frames_by_reason": {
+      "invalid_frame_size": 10
+    },
+    "frames_in_sequences": 190,
+    "frames_dropped_noise": 0,
+    "sequences_found": 1,
+    "gaps_detected": 0,
+    "recovery_rate": {
+      "source": "synthetic_sidecar",
+      "recovery_rate_basis": "ground_truth",
+      "expected_valid_frames": 190,
+      "expected_total_frames": 200,
+      "expected_corrupted_frames": 10,
+      "expected_gaps": 20,
+      "actual_valid_recovered": 190,
+      "recovery_rate_pct": 95.0,
+      "note": "Recovery rate computed against synthetic ground truth from .meta.json. Real-world runs will not have this ground truth \u2014 use as demo metric only."
+    }
+  },
+  "recovered_files": [
+    {
+      "filename": "CH0_2025-01-15_10-00-00_190frames.raw",
+      "path": "tmp_reject_check/out\\CH0_2025-01-15_10-00-00_190frames.raw",
+      "size_bytes": 67733,
+      "md5": "faad935b2ce2160b60e48986b427cdbf",
+      "sha256": "dad33c996ac2e3c70d3857cae2b8542ba64e31f1fd2de2672d22a0ddb7f05242",
+      "frame_count": 190,
+      "duration_seconds": 6.0,
+      "channel_id": 0,
+      "start_ts": "2025-01-15T10:00:00+00:00",
+      "end_ts": "2025-01-15T10:00:06+00:00",
+      "is_demo": false,
+      "is_raw_fallback": true
+    }
+  ],
+  "sequences": [
+    {
+      "vendor_id": "hikvision",
+      "channel_id": 0,
+      "frame_count": 190,
+      "start_ts": "2025-01-15T10:00:00+00:00",
+      "end_ts": "2025-01-15T10:00:06+00:00",
+      "gap_count": 0,
+      "gap_before": false
+    }
+  ],
+  "chain_of_custody": {
+    "source_image_sha256": "4ed7014817a1c16491c4e67b6be7a32a87e85c4b444cb0352606de41fd53c823",
+    "acquired_by": "DEEPTRACE_OPERATOR",
+    "acquired_at": "2026-09-13T15:27:26.283947+00:00",
+    "tool": "DeepTrace v0.1.0",
+    "hash_algorithms": [
+      "MD5",
+      "SHA-256"
+    ],
+    "processing_note": "Source image was not modified during analysis. All operations were read-only on the source disk image.",
+    "prev_entry_hash": null
+  },
+  "section_65b_certificate": {
+    "_note": "DRAFT CERTIFICATE \u2014 REQUIRES AUTHORIZED SIGNATORY",
+    "certificate_type": "Section 65B, Indian Evidence Act 1872",
+    "certifying_officer": "DEEPTRACE_OPERATOR",
+    "device_description": "Hikvision DVR/NVR",
+    "source_image_sha256": "4ed7014817a1c16491c4e67b6be7a32a87e85c4b444cb0352606de41fd53c823",
+    "statement": "DRAFT FACTUAL CONTENT FOR HUMAN REVIEW: the electronic records detailed in this report were extracted from the original digital storage media using DeepTrace (DeepTrace v0.1.0) in a read-only process. The source media was not modified during analysis. The lawful custodian must independently verify these facts and complete/sign any certificate. DeepTrace does not issue or sign a Section 65B certificate."
+  }
+}
