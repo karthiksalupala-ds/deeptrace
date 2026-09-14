@@ -9,6 +9,7 @@ import datetime
 
 import pytest
 
+from engine.mp4_writer import _build_demo_drawtext_filter
 from engine.pipeline import run_recovery
 from engine.vendors.hikvision import HikvisionParser
 from engine.synthetic_image_gen import (
@@ -198,3 +199,14 @@ class TestHikvisionParseFrames:
         assert stats["invalid_frames"] == meta["corrupted_frames"]
         assert stats["recovery_rate"]["expected_total_frames"] == meta["total_frames"]
         assert stats["recovery_rate"]["actual_valid_recovered"] == meta["valid_frames"]
+
+    def test_demo_drawtext_filter_escapes_time_and_vendor_colons(self):
+        """Regression: the ffmpeg drawtext filter must escape colons in timestamps and vendor labels."""
+        ts = BASE_TS.replace(year=2025, month=1, day=15, hour=10, minute=0, second=0)
+        filter_text = _build_demo_drawtext_filter(
+            type("SequenceStub", (), {"channel_id": 0, "vendor_id": "hikvision", "start_ts_utc": ts})()
+        )
+
+        assert "\\:" in filter_text
+        assert "CH0 | 2025-01-15 10\\:00\\:00 UTC" in filter_text
+        assert "Vendor\\: HIKVISION" in filter_text

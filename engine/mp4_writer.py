@@ -171,6 +171,20 @@ def write_mp4(
     )
 
 
+def _build_demo_drawtext_filter(sequence: FrameSequence) -> str:
+    """Return a portable ffmpeg drawtext filter with escaped colons for the text labels."""
+    ts_str = sequence.start_ts_utc.strftime("%Y-%m-%d %H\\:%M\\:%S UTC")
+    vendor_text = sequence.vendor_id.upper()
+    return (
+        "drawtext=text='DeepTrace RECOVERED Evidence':fontcolor=white:fontsize=20:"
+        "x=(w-text_w)/2:y=20:box=1:boxcolor=black@0.5,"
+        f"drawtext=text='CH{sequence.channel_id} | {ts_str}':fontcolor=yellow:fontsize=16:"
+        "x=10:y=h-40:box=1:boxcolor=black@0.5,"
+        f"drawtext=text='Vendor\\: {vendor_text}':fontcolor=cyan:fontsize=14:"
+        "x=10:y=h-65:box=1:boxcolor=black@0.5"
+    )
+
+
 def write_demo_mp4(
     sequence: FrameSequence,
     output_dir: str,
@@ -190,7 +204,6 @@ def write_demo_mp4(
 
     os.makedirs(output_dir, exist_ok=True)
     start_ts = sequence.start_ts_utc
-    ts_str = start_ts.strftime("%Y-%m-%d %H\\:%M\\:%S UTC")  # escaped colons for drawtext
     time_str = start_ts.strftime("%Y-%m-%d_%H-%M-%S")
     base_name = f"DEMO_CH{sequence.channel_id}_{time_str}_{sequence.frame_count}frames"
     out_path = os.path.join(output_dir, base_name + ".mp4")
@@ -199,16 +212,7 @@ def write_demo_mp4(
     if duration <= 0:
         duration = 2.0
 
-    # Build drawtext overlay: channel + timestamp + "DeepTrace RECOVERED" label
-    font_path = "C\\\\:/Windows/Fonts/arial.ttf"
-    drawtext = (
-        f"drawtext=fontfile='{font_path}':text='DeepTrace RECOVERED Evidence':fontsize=20:fontcolor=white@0.9:"
-        f"x=(w-text_w)/2:y=20:box=1:boxcolor=black@0.5,"
-        f"drawtext=fontfile='{font_path}':text='CH{sequence.channel_id} | {ts_str}':fontsize=16:fontcolor=yellow:"
-        f"x=10:y=h-40:box=1:boxcolor=black@0.5,"
-        f"drawtext=fontfile='{font_path}':text='Vendor\\: {sequence.vendor_id.upper()}':fontsize=14:fontcolor=cyan:"
-        f"x=10:y=h-65:box=1:boxcolor=black@0.5"
-    )
+    drawtext = _build_demo_drawtext_filter(sequence)
 
     ok, stderr = _run_ffmpeg([
         "ffmpeg", "-y",

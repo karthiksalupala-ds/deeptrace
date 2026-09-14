@@ -330,6 +330,48 @@ class SyntheticImageGenerator:
 
 # ── Pre-built scenario generators ─────────────────────────────────────────────
 
+def _even_gap_positions(num_frames: int, num_gaps: int) -> list[int]:
+    """Return evenly spaced frame indices where large timestamp jumps should occur."""
+    if num_gaps <= 0 or num_frames <= 1:
+        return []
+    max_gaps = min(num_gaps, max(1, num_frames - 1))
+    positions: list[int] = []
+    for idx in range(1, max_gaps + 1):
+        pos = int(round((idx * num_frames) / (max_gaps + 1)))
+        pos = max(1, min(pos, num_frames - 1))
+        positions.append(pos)
+    # Remove duplicates while keeping order
+    deduped: list[int] = []
+    seen: set[int] = set()
+    for pos in positions:
+        if pos not in seen:
+            deduped.append(pos)
+            seen.add(pos)
+    return deduped
+
+
+def _apply_gap_timestamps(
+    base_timestamp: datetime.datetime,
+    num_frames: int,
+    num_gaps: int,
+) -> list[datetime.datetime]:
+    """Create second-resolution timestamps and insert large multi-second jumps at gap points."""
+    gap_positions = _even_gap_positions(num_frames, num_gaps)
+    if not gap_positions:
+        return [base_timestamp + datetime.timedelta(seconds=i) for i in range(num_frames)]
+
+    jump_by_gap = [random.randint(8, 22) + (idx * 2) for idx in range(len(gap_positions))]
+    timestamps: list[datetime.datetime] = []
+    cumulative_gap_seconds = 0
+    jump_index = 0
+    for i in range(num_frames):
+        if jump_index < len(gap_positions) and i >= gap_positions[jump_index]:
+            cumulative_gap_seconds += jump_by_gap[jump_index]
+            jump_index += 1
+        timestamps.append(base_timestamp + datetime.timedelta(seconds=i + cumulative_gap_seconds))
+    return timestamps
+
+
 def generate_hikvision_scenario(
     path: str,
     num_frames: int = 50,
@@ -355,16 +397,17 @@ def generate_hikvision_scenario(
     gen.add_gap(512)  # padding before first frame
 
     frames_written = []
-    gap_offsets = sorted(random.sample(range(num_frames), min(num_gaps, num_frames)))
+    gap_positions = _even_gap_positions(num_frames, num_gaps)
     corrupt_indices = set(random.sample(range(num_frames), min(num_corrupted, num_frames)))
+    timestamps = _apply_gap_timestamps(base_timestamp, num_frames, num_gaps)
 
     for i in range(num_frames):
-        ts = base_timestamp + datetime.timedelta(seconds=i / 30.0)
+        ts = timestamps[i]
         is_keyframe = (i % 10 == 0)
         corrupt = (i in corrupt_indices)
 
-        # Insert gap before some frames
-        if i in gap_offsets:
+        # Insert gap before some frames in the raw image layout as well as in time.
+        if i in gap_positions:
             gen.add_gap(8192)
 
         offset = gen.add_hikvision_frame(
@@ -418,15 +461,16 @@ def generate_dahua_scenario(
     gen.add_gap(512)
 
     frames_written = []
-    gap_offsets = sorted(random.sample(range(num_frames), min(num_gaps, num_frames)))
+    gap_positions = _even_gap_positions(num_frames, num_gaps)
     corrupt_indices = set(random.sample(range(num_frames), min(num_corrupted, num_frames)))
+    timestamps = _apply_gap_timestamps(base_timestamp, num_frames, num_gaps)
 
     for i in range(num_frames):
-        ts = base_timestamp + datetime.timedelta(seconds=i / 25.0)
+        ts = timestamps[i]
         is_keyframe = (i % 8 == 0)
         corrupt = (i in corrupt_indices)
 
-        if i in gap_offsets:
+        if i in gap_positions:
             gen.add_gap(8192)
 
         c_head = corrupt and (i % 2 == 0)
