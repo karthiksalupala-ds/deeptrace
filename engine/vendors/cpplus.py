@@ -86,13 +86,13 @@ class CpPlusParser(BaseVendorParser):
                     return True, offset
         return False, None
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         """
         Delegate to DahuaParser — same DHAV frame format on OEM units.
         Returned FrameRecords have vendor_id rewritten to 'cpplus'.
         """
         count = 0
-        for frame in self._dahua_parser.parse_frames(image_path):
+        for frame in self._dahua_parser.parse_frames(image_path, strict=strict):
             frame.vendor_id = self.vendor_id
             yield frame
             count += 1

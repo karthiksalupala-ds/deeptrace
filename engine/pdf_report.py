@@ -139,7 +139,10 @@ def render_pdf(report: dict[str, Any], out_path: str) -> None:
     ], styles))
     story += [Spacer(1, 18 * mm), _p("Technical findings prepared for human review", styles["Subsection"]), _p("This report records the technical output of a read-only recovery process. It is not a legal opinion and the Section 65B material included later is a draft requiring review and signature by the appropriate human custodian.", styles["BodySmall"]), PageBreak()]
 
-    story += [_p("Recovery summary", styles["Section"]), _p(f"{_text(device.get('vendor_name', 'Unknown'))} parser identified the source format with {_text(device.get('detection_confidence', 'unknown'))} confidence.", styles["BodySmall"]), Spacer(1, 7 * mm)]
+    story += [_p("Recovery summary", styles["Section"]), _p(f"{_text(device.get('vendor_name', 'Unknown'))} parser identified the source format with {_text(device.get('detection_confidence', 'unknown'))} confidence.", styles["BodySmall"]), _p(f"Validation level: {_text(report.get('validation_level', stats.get('validation_level', 'full'))).upper()}", styles["Subsection"])]
+    if report.get("parsing_notes"):
+        story.append(_p(report["parsing_notes"], styles["BodySmall"]))
+    story.append(Spacer(1, 7 * mm))
     story.append(_table([
         ["Metric", "Result", "Interpretation"],
         ["Recovery rate", f"{rate}%", "Recovered valid frames against available ground truth when present"],
@@ -168,6 +171,8 @@ def render_pdf(report: dict[str, Any], out_path: str) -> None:
         ("Signature offset", device.get("signature_found_at_offset", "-")),
         ("Source hash", custody.get("source_image_sha256", disk.get("sha256"))),
         ("Read-only statement", custody.get("processing_note", "-")),
+        ("Previous custody entry hash", custody.get("prev_entry_hash") or "Genesis entry — no prior record"),
+        ("This custody entry hash", custody.get("entry_hash", "-")),
     ], styles), PageBreak()]
 
     story += [_p("Draft Section 65B Certificate", styles["Section"]), _p("Technical content for review and completion by the person in lawful control of the source device or system.", styles["Subtitle"]), Spacer(1, 8 * mm)]

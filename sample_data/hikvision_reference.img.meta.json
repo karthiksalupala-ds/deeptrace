@@ -1,0 +1,7 @@
+{
+  "vendor": "hikvision",
+  "total_frames": 200,
+  "valid_frames": 190,
+  "corrupted_frames": 10,
+  "gaps_inserted": 20
+}

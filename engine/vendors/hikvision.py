@@ -23,11 +23,12 @@ from __future__ import annotations
 
 import datetime
 import logging
+import mmap
 import os
 import struct
 from typing import Optional, Iterator
 
-from ..base_parser import BaseVendorParser, FrameRecord
+from ..base_parser import BaseVendorParser, DetectionResult, FrameRecord
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +73,27 @@ class HikvisionParser(BaseVendorParser):
                     return True, offset
         return False, None
 
+    def detect_verbose(self, image_path: str, max_scan_bytes: int = 16 * 1024 * 1024) -> DetectionResult:
+        file_size = os.path.getsize(image_path)
+        with open(image_path, "rb") as fh:
+            for offset in DETECT_OFFSETS:
+                if offset >= file_size:
+                    continue
+                fh.seek(offset)
+                match = fh.read(DETECT_READ_SIZE).find(HIKVISION_SIGNATURE)
+                if match >= 0:
+                    return DetectionResult(True, offset + match, "fixed_offsets", HIKVISION_SIGNATURE.decode())
+            fh.seek(0)
+            remaining = min(file_size, max_scan_bytes)
+            data = fh.read(remaining)
+            match = data.find(HIKVISION_SIGNATURE)
+            if match >= 0:
+                return DetectionResult(True, match, "bounded_scan", HIKVISION_SIGNATURE.decode())
+        return DetectionResult(False, None, "not_found", HIKVISION_SIGNATURE.decode())
+
     # ── Frame parsing ──────────────────────────────────────────────────────────
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         """
         Scan the entire disk image for Hikvision frame magic bytes and
         yield each frame as a FrameRecord.
@@ -86,26 +105,19 @@ class HikvisionParser(BaseVendorParser):
         file_size = os.path.getsize(image_path)
         parsed_count = 0
 
-        with open(image_path, "rb") as fh:
-            data = fh.read()  # MVP: read entire image; TODO(karthik): chunked for multi-TB
-
-        offset = 0
-        while offset < len(data):
-            # Fast scan: find next magic occurrence
-            idx = data.find(HIKVISION_MAGIC_BYTES, offset)
-            if idx == -1:
-                break
-
-            frame = self._parse_frame_at(data, idx, file_size)
-            if frame is not None:
-                yield frame
-                parsed_count += 1
-                if frame.valid and frame.frame_size > HEADER_SIZE:
-                    offset = idx + frame.frame_size
+        with open(image_path, "rb") as fh, mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as data:
+            offset = 0
+            while offset < file_size:
+                idx = data.find(HIKVISION_MAGIC_BYTES, offset)
+                if idx == -1:
+                    break
+                frame = self._parse_frame_at(data, idx, file_size)
+                if frame is not None:
+                    yield frame
+                    parsed_count += 1
+                    offset = idx + frame.frame_size if frame.valid and frame.frame_size > HEADER_SIZE else idx + len(HIKVISION_MAGIC_BYTES)
                 else:
                     offset = idx + len(HIKVISION_MAGIC_BYTES)
-            else:
-                offset = idx + len(HIKVISION_MAGIC_BYTES)
 
         logger.info("Hikvision: parsed %d frames from %s", parsed_count, image_path)
 

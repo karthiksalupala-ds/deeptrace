@@ -21,6 +21,7 @@ def run_recovery(
     operator_name: str = "DEEPTRACE_OPERATOR",
     case_number: str = "UNKNOWN_CASE",
     prev_entry_hash: str | None = None,
+    strict: bool = True,
 ) -> dict[str, Any]:
     """
     Run the full Phase 1 + Phase 2 DeepTrace pipeline on a disk image.
@@ -41,7 +42,8 @@ def run_recovery(
 
     # 1. Identify manufacturer
     registry = build_default_registry()
-    parser, offset = registry.detect_vendor(image_path)
+    parser, detection = registry.detect_vendor_verbose(image_path)
+    offset = detection.offset
     
     all_frames = []
     
@@ -51,7 +53,7 @@ def run_recovery(
         # and reporter need to see all frames (valid and invalid) to build stats.
         # In a fully streaming memory-constrained environment, we might push
         # chunks through the sequencer instead.
-        all_frames = list(parser.parse_frames(image_path))
+        all_frames = list(parser.parse_frames(image_path, strict=strict))
     
     # 3. Sequence frames
     sequences, seq_stats = sequence_frames(
@@ -83,6 +85,14 @@ def run_recovery(
         operator_name=operator_name,
         case_number=case_number,
         prev_entry_hash=prev_entry_hash,
+        validation_level="full" if strict else "permissive",
+        detection_method=detection.method,
+        parsing_notes=(
+            f"Manufacturer detected ({parser.vendor_name}) at offset {offset}. "
+            "No valid frames extracted — possible firmware/frame-format variant not covered by current parser. Recommend manual hex inspection."
+            if parser and not any(frame.valid for frame in all_frames)
+            else None
+        ),
     )
     
     report_path = os.path.join(out_dir, "report.json")
@@ -99,10 +109,11 @@ if __name__ == "__main__":
     parser.add_argument("image_path", help="Path to raw disk image")
     parser.add_argument("out_dir", help="Output directory for MP4s and report")
     parser.add_argument("--demo", action="store_true", help="Generate playable demo MP4s")
+    parser.add_argument("--permissive", action="store_true", help="Skip Dahua checksum validation and mark results permissive")
     args = parser.parse_args()
 
     print(f"Running recovery on {args.image_path} -> {args.out_dir}")
-    report = run_recovery(args.image_path, args.out_dir, generate_demo_mp4s=args.demo)
+    report = run_recovery(args.image_path, args.out_dir, generate_demo_mp4s=args.demo, strict=not args.permissive)
     
     print("\nRecovery Summary:")
     print(f"  Device: {report['device_identification']['vendor_name']}")

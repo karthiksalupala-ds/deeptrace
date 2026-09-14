@@ -26,6 +26,11 @@ backend/.data/
 sample_data/out/
 sample_data/*.img
 sample_data/*.img.meta.json
+!sample_data/hikvision_reference.img
+!sample_data/hikvision_reference.img.meta.json
+!sample_data/dahua_reference.img
+!sample_data/dahua_reference.img.meta.json
+!sample_data/README.md
 *.raw
 
 # Node dependencies and frontend build output

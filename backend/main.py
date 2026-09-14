@@ -37,16 +37,16 @@ def _require_job(job_id: str) -> Job:
     return job
 
 
-def _queue_uploaded_job(background_tasks: BackgroundTasks, file: UploadFile) -> Job:
+def _queue_uploaded_job(background_tasks: BackgroundTasks, file: UploadFile, strict: bool = True) -> Job:
     if not file.filename:
         raise HTTPException(status_code=400, detail="A file upload is required")
 
-    job_id = create_job("pending", filename=Path(file.filename).name)
+    job_id = create_job("pending", filename=Path(file.filename).name, strict=strict)
     try:
         saved_path = save_upload(file.file, job_id, filename=file.filename)
         if Path(saved_path).stat().st_size == 0:
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
-        set_job_input(job_id, saved_path)
+        set_job_input(job_id, saved_path, strict=strict)
     except HTTPException:
         raise
     except Exception as exc:
@@ -70,15 +70,15 @@ def list_vendors() -> dict:
 
 @app.post("/api/jobs", response_model=dict[str, str])
 @app.post("/api/v1/jobs", response_model=dict[str, str])
-def create_new_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)) -> dict[str, str]:
-    job = _queue_uploaded_job(background_tasks, file)
+def create_new_job(background_tasks: BackgroundTasks, strict: bool = True, file: UploadFile = File(...)) -> dict[str, str]:
+    job = _queue_uploaded_job(background_tasks, file, strict=strict)
     return {"job_id": job.job_id}
 
 
 @app.post("/api/demo/generate", response_model=dict[str, str])
 @app.post("/api/v1/demo/generate", response_model=dict[str, str])
 def generate_demo_job(req: DemoGenerateRequest, background_tasks: BackgroundTasks) -> dict[str, str]:
-    job_id = create_job("pending", filename=f"{req.vendor}_demo.img", generate_demo_mp4s=True)
+    job_id = create_job("pending", filename=f"{req.vendor}_demo.img", generate_demo_mp4s=True, strict=req.strict)
     image_path = Path(get_output_dir(job_id)) / "source.img"
     generator = generate_hikvision_scenario if req.vendor == "hikvision" else generate_dahua_scenario
     try:
@@ -88,7 +88,7 @@ def generate_demo_job(req: DemoGenerateRequest, background_tasks: BackgroundTask
             num_corrupted=0 if req.scenario == "clean" else 10,
             num_gaps=20 if req.scenario == "fragmented" else 0,
         )
-        set_job_input(job_id, str(image_path), generate_demo_mp4s=True)
+        set_job_input(job_id, str(image_path), generate_demo_mp4s=True, strict=req.strict)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to generate synthetic data: {exc}") from exc
 
@@ -133,6 +133,7 @@ def search_job_evidence(job_id: str, q: str = "") -> dict:
 
 
 @app.get("/api/jobs/{job_id}/motion/{filename}")
+@app.get("/api/jobs/{job_id}/files/{filename}/motion")
 def analyze_motion(job_id: str, filename: str) -> dict:
     _require_job(job_id)
     safe_name = Path(filename).name

@@ -27,3 +27,4 @@ JobResponse = Job
 class DemoGenerateRequest(BaseModel):
     vendor: Literal["hikvision", "dahua"]
     scenario: Literal["clean", "corrupted", "fragmented"]
+    strict: bool = True

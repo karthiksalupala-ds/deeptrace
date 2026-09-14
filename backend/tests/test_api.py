@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pypdf import PdfReader
 
+import backend.jobs as jobs_module
 from backend.main import app
 from engine.synthetic_image_gen import generate_hikvision_scenario
 
@@ -86,8 +87,39 @@ def test_demo_pdf_report_is_a_signed_draft(tmp_path):
     pdf_path = tmp_path / "report.pdf"
     pdf_path.write_bytes(pdf_response.content)
     text = "".join(page.extract_text() or "" for page in PdfReader(str(pdf_path)).pages)
+    normalized_text = " ".join(text.split())
+    assert "DEEPTRACE" in text
+    assert "Case reference" in text
+    assert "Recovery summary" in text
+    assert "Recovered evidence index" in text
+    assert "Methodology appendix" in text
+    assert "Draft Section 65B Certificate" in text
     assert "DRAFT ONLY" in text
+    assert "REQUIRES HUMAN REVIEW AND SIGNATURE" in text
+    assert "This is a draft prepared by DeepTrace for review." in normalized_text
     assert "DeepTrace cannot legally issue" in text
+
+
+def test_custody_hash_chain_links_three_cases(monkeypatch):
+    """Each case links to the prior custody entry, starting with a genesis entry."""
+    monkeypatch.setattr(jobs_module, "_LAST_CUSTODY_HASH", None)
+    custody_entries = []
+
+    for vendor in ("hikvision", "dahua", "hikvision"):
+        response = client.post(
+            "/api/demo/generate",
+            json={"vendor": vendor, "scenario": "clean"},
+        )
+        assert response.status_code == 200
+        report = client.get(
+            f"/api/jobs/{response.json()['job_id']}/report.json"
+        ).json()
+        custody_entries.append(report["chain_of_custody"])
+
+    assert custody_entries[0]["prev_entry_hash"] is None
+    assert custody_entries[1]["prev_entry_hash"] == custody_entries[0]["entry_hash"]
+    assert custody_entries[2]["prev_entry_hash"] == custody_entries[1]["entry_hash"]
+    assert len({entry["entry_hash"] for entry in custody_entries}) == 3
 
 
 def test_evidence_search_matches_camera_and_time():

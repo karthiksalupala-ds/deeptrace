@@ -67,6 +67,9 @@ def build_report(
     operator_name: str = "DEEPTRACE_OPERATOR",
     case_number: str = "UNKNOWN_CASE",
     prev_entry_hash: Optional[str] = None,
+    validation_level: str = "full",
+    parsing_notes: str | None = None,
+    detection_method: str = "fixed_offsets",
 ) -> dict[str, Any]:
     """
     Assemble the full DeepTrace forensic JSON report.
@@ -95,6 +98,7 @@ def build_report(
             "vendor_id": vendor_parser.vendor_id,
             "vendor_name": vendor_parser.vendor_name,
             "signature_found_at_offset": signature_offset,
+            "signature_detection_method": detection_method,
             "fully_implemented": vendor_parser.is_fully_implemented(),
             "detection_confidence": "high" if vendor_parser.is_fully_implemented() else "medium",
         }
@@ -103,6 +107,7 @@ def build_report(
             "vendor_id": "unknown",
             "vendor_name": "Unknown",
             "signature_found_at_offset": None,
+            "signature_detection_method": detection_method,
             "fully_implemented": False,
             "detection_confidence": "low",
         }
@@ -173,6 +178,7 @@ def build_report(
         "sequences_found": seq_stats.sequences_found,
         "gaps_detected": seq_stats.gaps_detected,
         "recovery_rate": recovery_rate_info,
+        "validation_level": validation_level,
     }
 
     # ── Recovered files ────────────────────────────────────────────────────────
@@ -195,9 +201,29 @@ def build_report(
     ]
 
     # ── Assemble report ────────────────────────────────────────────────────────
+    custody_entry = {
+        "source_image_sha256": sha256,
+        "acquired_by": operator_name,
+        "acquired_at": now_iso,
+        "tool": TOOL_VERSION,
+        "validation_level": validation_level,
+        "parsing_notes": parsing_notes,
+        "hash_algorithms": ["MD5", "SHA-256"],
+        "processing_note": (
+            "Source image was not modified during analysis. "
+            "All operations were read-only on the source disk image."
+        ),
+        "prev_entry_hash": prev_entry_hash,
+    }
+    entry_hash = hashlib.sha256(
+        json.dumps(custody_entry, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
     report = {
         "tool": TOOL_VERSION,
         "generated_at": now_iso,
+        "validation_level": validation_level,
+        "parsing_notes": parsing_notes,
         "case_metadata": {
             "case_number": case_number,
             "operator": operator_name,
@@ -225,18 +251,7 @@ def build_report(
             }
             for sequence in sequences
         ],
-        "chain_of_custody": {
-            "source_image_sha256": sha256,
-            "acquired_by": operator_name,
-            "acquired_at": now_iso,
-            "tool": TOOL_VERSION,
-            "hash_algorithms": ["MD5", "SHA-256"],
-            "processing_note": (
-                "Source image was not modified during analysis. "
-                "All operations were read-only on the source disk image."
-            ),
-            "prev_entry_hash": prev_entry_hash,
-        },
+        "chain_of_custody": {**custody_entry, "entry_hash": entry_hash},
         "section_65b_certificate": {
             "_note": "DRAFT CERTIFICATE — REQUIRES AUTHORIZED SIGNATORY",
             "certificate_type": "Section 65B, Indian Evidence Act 1872",

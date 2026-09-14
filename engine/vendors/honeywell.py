@@ -51,7 +51,7 @@ class HoneywellParser(BaseVendorParser):
                         return True, offset
         return False, None
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         raise NotImplementedError(
             "Honeywell MAXPRO file system parsing not yet implemented. "
             "See CARVE paper (Saheed et al.) for the required approach. Roadmap item."

@@ -212,7 +212,8 @@ def write_demo_mp4(
     if duration <= 0:
         duration = 2.0
 
-    drawtext = _build_demo_drawtext_filter(sequence)
+    motion_filter = "noise=alls=8:allf=t+u"
+    drawtext = f"{motion_filter},{_build_demo_drawtext_filter(sequence)}"
 
     ok, stderr = _run_ffmpeg([
         "ffmpeg", "-y",
@@ -227,12 +228,13 @@ def write_demo_mp4(
     ])
 
     if not ok or not os.path.exists(out_path):
-        # Fallback without drawtext if font loading fails
+        # Keep the moving block in the fallback so motion analysis remains demonstrable.
         logger.warning("Demo MP4 generation with drawtext failed, falling back to plain bars. Error: %s", stderr[-200:])
         ok, stderr = _run_ffmpeg([
             "ffmpeg", "-y",
             "-f", "lavfi",
             "-i", f"smptebars=size=640x480:rate=25",
+            "-vf", motion_filter,
             "-t", str(duration),
             "-c:v", "libx264",
             "-preset", "ultrafast",

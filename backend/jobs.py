@@ -1,6 +1,4 @@
 import datetime
-import hashlib
-import json
 import logging
 import threading
 import uuid
@@ -14,12 +12,12 @@ from .storage import get_output_dir
 logger = logging.getLogger(__name__)
 
 _JOB_STORE: dict[str, Job] = {}
-_JOB_INPUTS: dict[str, tuple[str, bool]] = {}
+_JOB_INPUTS: dict[str, tuple[str, bool, bool]] = {}
 _JOB_LOCK = threading.Lock()
 _LAST_CUSTODY_HASH: str | None = None
 
 
-def create_job(upload_path: str, filename: str | None = None, generate_demo_mp4s: bool = False) -> str:
+def create_job(upload_path: str, filename: str | None = None, generate_demo_mp4s: bool = False, strict: bool = True) -> str:
     """Register an input path and return its new job ID."""
     job_id = uuid.uuid4().hex
     job = Job(
@@ -29,7 +27,7 @@ def create_job(upload_path: str, filename: str | None = None, generate_demo_mp4s
     )
     with _JOB_LOCK:
         _JOB_STORE[job_id] = job
-        _JOB_INPUTS[job_id] = (upload_path, generate_demo_mp4s)
+        _JOB_INPUTS[job_id] = (upload_path, generate_demo_mp4s, strict)
     return job_id
 
 
@@ -43,9 +41,9 @@ def get_all_jobs() -> list[Job]:
         return list(_JOB_STORE.values())
 
 
-def set_job_input(job_id: str, image_path: str, generate_demo_mp4s: bool = False) -> None:
+def set_job_input(job_id: str, image_path: str, generate_demo_mp4s: bool = False, strict: bool = True) -> None:
     with _JOB_LOCK:
-        _JOB_INPUTS[job_id] = (image_path, generate_demo_mp4s)
+        _JOB_INPUTS[job_id] = (image_path, generate_demo_mp4s, strict)
 
 
 def run_job_async(job_id: str) -> None:
@@ -59,7 +57,7 @@ def run_job_async(job_id: str) -> None:
             return
         job.status = JobStatus.PROCESSING
 
-    image_path, generate_demo_mp4s = input_info
+    image_path, generate_demo_mp4s, strict = input_info
     with _JOB_LOCK:
         previous_hash = _LAST_CUSTODY_HASH
     try:
@@ -67,13 +65,13 @@ def run_job_async(job_id: str) -> None:
             image_path=image_path,
             out_dir=get_output_dir(job_id),
             generate_demo_mp4s=generate_demo_mp4s,
+            case_number=f"CASE-{job_id[:8].upper()}",
             prev_entry_hash=previous_hash,
+            strict=strict,
         )
-        report_hash = hashlib.sha256(
-            json.dumps(report, sort_keys=True, default=str).encode("utf-8")
-        ).hexdigest()
+        custody_hash = report["chain_of_custody"]["entry_hash"]
         with _JOB_LOCK:
-            _LAST_CUSTODY_HASH = report_hash
+            _LAST_CUSTODY_HASH = custody_hash
             job.report = report
             job.status = JobStatus.DONE
     except Exception as exc:

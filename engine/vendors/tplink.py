@@ -52,7 +52,7 @@ class TpLinkParser(BaseVendorParser):
                         return True, offset
         return False, None
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         raise NotImplementedError(
             "TP-Link VIGI file system parsing not yet implemented. "
             "VIGI NVRs appear to use standard Linux container formats rather "

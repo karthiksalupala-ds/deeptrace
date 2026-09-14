@@ -52,7 +52,7 @@ class MatrixParser(BaseVendorParser):
                         return True, offset
         return False, None
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         raise NotImplementedError(
             "Matrix COSEC file system parsing not yet implemented. "
             "Format is proprietary and undocumented. Roadmap: acquire hardware "

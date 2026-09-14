@@ -12,6 +12,9 @@ export interface Job {
 export interface Report {
   tool: string
   generated_at: string
+  validation_level: 'full' | 'permissive'
+  parsing_notes: string | null
+  case_metadata?: { case_number: string; operator: string }
   disk_metadata: {
     filename: string
     path: string
@@ -26,6 +29,7 @@ export interface Report {
     signature_found_at_offset: number | null
     fully_implemented: boolean
     detection_confidence: string
+    signature_detection_method: string
   }
   recovery_stats: {
     total_frames_scanned: number
@@ -37,6 +41,7 @@ export interface Report {
     frames_dropped_noise: number
     sequences_found: number
     gaps_detected: number
+    validation_level?: 'full' | 'permissive'
     recovery_rate: {
       recovery_rate_pct?: number
       recovery_rate_basis: 'ground_truth' | 'scanned_only'
@@ -56,6 +61,7 @@ export interface Report {
     hash_algorithms: string[]
     processing_note: string
     prev_entry_hash: string | null
+    entry_hash?: string
   }
   section_65b_certificate?: Record<string, string>
 }
@@ -86,6 +92,14 @@ export interface RecoveredFile {
   is_raw_fallback: boolean
 }
 
+export interface Vendor {
+  id: string
+  vendor_id: string
+  vendor_name: string
+  vendor_description: string
+  is_fully_implemented: boolean
+}
+
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(path, options)
   if (!response.ok) {
@@ -110,6 +124,7 @@ export const uploadImage = (file: File) => {
 
 export const getJob = (jobId: string) => request<Job>(`/api/jobs/${jobId}`)
 export const getJobs = () => request<Job[]>('/api/jobs')
+export const getVendors = () => request<{ vendors: Vendor[] }>('/api/vendors')
 export const reportUrl = (jobId: string) => `/api/jobs/${jobId}/report.json`
 export const pdfReportUrl = (jobId: string) => `/api/jobs/${jobId}/report.pdf`
 export const fileUrl = (jobId: string, filename: string) => `/api/jobs/${jobId}/files/${encodeURIComponent(filename)}`
@@ -119,6 +134,6 @@ export const searchEvidence = (jobId: string, query: string) =>
     `/api/jobs/${jobId}/search?q=${encodeURIComponent(query)}`,
   )
 export const analyzeMotion = (jobId: string, filename: string) =>
-  request<{ method: string; threshold: number; motion_events: MotionEvent[] }>(`/api/jobs/${jobId}/motion/${encodeURIComponent(filename)}`)
+  request<{ method: string; threshold: number; motion_events: MotionEvent[]; summary: string }>(`/api/jobs/${jobId}/files/${encodeURIComponent(filename)}/motion`)
 
 export interface MotionEvent { start_sec: number; end_sec: number; intensity: number }

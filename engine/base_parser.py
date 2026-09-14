@@ -13,10 +13,16 @@ from __future__ import annotations
 
 import abc
 import datetime
-from typing import Optional, TypedDict, Iterator
-
-
 from dataclasses import dataclass
+from typing import Optional, Iterator
+
+
+@dataclass(frozen=True)
+class DetectionResult:
+    found: bool
+    offset: int | None
+    method: str
+    signature: str
 
 @dataclass
 class FrameRecord:
@@ -35,6 +41,7 @@ class FrameRecord:
     checksum_valid: bool             # True if checksum passed (or N/A for vendor)
     valid: bool = True               # True if fully parsed and valid
     rejection_reason: Optional[str] = None # Reason if valid=False
+    validation_level: str = "full"   # "full" or "permissive"
 
 
 class BaseVendorParser(abc.ABC):
@@ -71,8 +78,13 @@ class BaseVendorParser(abc.ABC):
             signature was found, or None if not found.
         """
 
+    def detect_verbose(self, image_path: str, max_scan_bytes: int = 16 * 1024 * 1024) -> DetectionResult:
+        """Return detection metadata; concrete parsers may add flexible scanning."""
+        found, offset = self.detect(image_path)
+        return DetectionResult(found, offset, "fixed_offsets" if found else "not_found", "")
+
     @abc.abstractmethod
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         """
         Scan the entire disk image and return all parseable frames.
 

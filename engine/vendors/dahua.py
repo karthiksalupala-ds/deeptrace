@@ -49,11 +49,12 @@ from __future__ import annotations
 
 import datetime
 import logging
+import mmap
 import os
 import struct
 from typing import Optional, Iterator
 
-from ..base_parser import BaseVendorParser, FrameRecord
+from ..base_parser import BaseVendorParser, DetectionResult, FrameRecord
 
 logger = logging.getLogger(__name__)
 
@@ -134,38 +135,49 @@ class DahuaParser(BaseVendorParser):
                     return True, offset
         return False, None
 
+    def detect_verbose(self, image_path: str, max_scan_bytes: int = 16 * 1024 * 1024) -> DetectionResult:
+        file_size = os.path.getsize(image_path)
+        with open(image_path, "rb") as fh:
+            for offset in DETECT_OFFSETS:
+                if offset >= file_size:
+                    continue
+                fh.seek(offset)
+                match = fh.read(DETECT_READ_SIZE).find(DAHUA_DETECT_SIGNATURE)
+                if match >= 0:
+                    return DetectionResult(True, offset + match, "fixed_offsets", DAHUA_DETECT_SIGNATURE.decode())
+            fh.seek(0)
+            data = fh.read(min(file_size, max_scan_bytes))
+            match = data.find(DAHUA_DETECT_SIGNATURE)
+            if match >= 0:
+                return DetectionResult(True, match, "bounded_scan", DAHUA_DETECT_SIGNATURE.decode())
+        return DetectionResult(False, None, "not_found", DAHUA_DETECT_SIGNATURE.decode())
+
     # ── Frame parsing ──────────────────────────────────────────────────────────
 
-    def parse_frames(self, image_path: str) -> Iterator[FrameRecord]:
+    def parse_frames(self, image_path: str, strict: bool = True) -> Iterator[FrameRecord]:
         """
         Scan entire disk image for DHAV frames using dual-signature validation.
         Yields all parsed frames, including invalid ones with rejection reasons.
         """
         parsed_count = 0
 
-        with open(image_path, "rb") as fh:
-            data = fh.read()  # TODO(karthik): chunked reads for multi-TB images
-
-        offset = 0
-        while offset < len(data):
-            idx = data.find(DHAV_HEADER_MAGIC, offset)
-            if idx == -1:
-                break
-
-            frame = self._parse_frame_at(data, idx)
-            if frame is not None:
-                yield frame
-                parsed_count += 1
-                if frame.valid and frame.frame_size >= FRAME_OVERHEAD:
-                    offset = idx + frame.frame_size
+        with open(image_path, "rb") as fh, mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as data:
+            offset = 0
+            while offset < os.path.getsize(image_path):
+                idx = data.find(DHAV_HEADER_MAGIC, offset)
+                if idx == -1:
+                    break
+                frame = self._parse_frame_at(data, idx, strict=strict)
+                if frame is not None:
+                    yield frame
+                    parsed_count += 1
+                    offset = idx + frame.frame_size if frame.valid and frame.frame_size >= FRAME_OVERHEAD else idx + len(DHAV_HEADER_MAGIC)
                 else:
                     offset = idx + len(DHAV_HEADER_MAGIC)
-            else:
-                offset = idx + len(DHAV_HEADER_MAGIC)
 
         logger.info("Dahua: parsed %d DHAV frames from %s", parsed_count, image_path)
 
-    def _parse_frame_at(self, data: bytes, offset: int) -> Optional[FrameRecord]:
+    def _parse_frame_at(self, data: bytes, offset: int, strict: bool = True) -> Optional[FrameRecord]:
         """
         Attempt to parse and dual-signature-validate a DHAV frame at offset.
         Returns FrameRecord with valid=False if validation fails.
@@ -185,7 +197,8 @@ class DahuaParser(BaseVendorParser):
             payload=b"",
             checksum_valid=False,
             valid=False,
-            rejection_reason="unknown_error"
+            rejection_reason="unknown_error",
+            validation_level="full" if strict else "permissive",
         )
 
         if offset + HEADER_SIZE > len(data):
@@ -229,19 +242,7 @@ class DahuaParser(BaseVendorParser):
             base_frame.rejection_reason = "invalid_frame_size"
             return base_frame
 
-        # Validation 3: XOR checksum over header bytes 0..22
-        computed_checksum = _xor_checksum(data[offset : offset + HEADER_SIZE - 1])
-        if computed_checksum != checksum_stored:
-            logger.debug(
-                "Dahua: checksum mismatch at offset %d (expected %02x, got %02x)",
-                offset, checksum_stored, computed_checksum,
-            )
-            base_frame.rejection_reason = "checksum_mismatch"
-            return base_frame
-            
-        base_frame.checksum_valid = True
-
-        # ── Parse footer ──────────────────────────────────────────────────────
+        # ── Parse footer ────────────────────────────────────────────────────
         footer_offset = offset + frame_size - FOOTER_SIZE
         if footer_offset + FOOTER_SIZE > len(data):
             base_frame.rejection_reason = "footer_out_of_bounds"
@@ -261,6 +262,14 @@ class DahuaParser(BaseVendorParser):
         # Validation 5: header and footer frame sizes must agree
         if footer_size != frame_size:
             base_frame.rejection_reason = "footer_size_mismatch"
+            return base_frame
+
+        # Validation 3: checksum is optional because the documented XOR is a stand-in.
+        computed_checksum = _xor_checksum(data[offset : offset + HEADER_SIZE - 1])
+        base_frame.checksum_valid = computed_checksum == checksum_stored
+        if strict and not base_frame.checksum_valid:
+            logger.debug("Dahua: checksum mismatch at offset %d", offset)
+            base_frame.rejection_reason = "checksum_mismatch"
             return base_frame
 
         # ── Extract payload ───────────────────────────────────────────────────
