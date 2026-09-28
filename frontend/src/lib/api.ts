@@ -100,8 +100,10 @@ export interface Vendor {
   is_fully_implemented: boolean
 }
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(path, options)
+  const response = await fetch(`${API_BASE}${path}`, options)
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}))
     throw new Error(detail.detail || `Request failed (${response.status})`)
@@ -125,9 +127,9 @@ export const uploadImage = (file: File) => {
 export const getJob = (jobId: string) => request<Job>(`/api/jobs/${jobId}`)
 export const getJobs = () => request<Job[]>('/api/jobs')
 export const getVendors = () => request<{ vendors: Vendor[] }>('/api/vendors')
-export const reportUrl = (jobId: string) => `/api/jobs/${jobId}/report.json`
-export const pdfReportUrl = (jobId: string) => `/api/jobs/${jobId}/report.pdf`
-export const fileUrl = (jobId: string, filename: string) => `/api/jobs/${jobId}/files/${encodeURIComponent(filename)}`
+export const reportUrl = (jobId: string) => `${API_BASE}/api/jobs/${jobId}/report.json`
+export const pdfReportUrl = (jobId: string) => `${API_BASE}/api/jobs/${jobId}/report.pdf`
+export const fileUrl = (jobId: string, filename: string) => `${API_BASE}/api/jobs/${jobId}/files/${encodeURIComponent(filename)}`
 export const getJobFiles = (jobId: string) => request<{ files: string[] }>(`/api/jobs/${jobId}/files`)
 export const searchEvidence = (jobId: string, query: string) =>
   request<{ query: string; match_method: string; files: RecoveredFile[] }>(
