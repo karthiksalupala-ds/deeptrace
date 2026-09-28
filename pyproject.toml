@@ -1,2 +1,16 @@
+[project]
+name = "deeptrace"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "pypdf",
+    "reportlab",
+    "python-multipart",
+    "opencv-python-headless",
+]
+
 [tool.vercel]
 entrypoint = "backend.main:app"
