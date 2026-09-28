@@ -3,6 +3,7 @@ engine/tests/test_report.py — Tests for the JSON report generator.
 """
 
 import datetime
+import json
 import os
 
 from engine.vendors.hikvision import HikvisionParser
@@ -86,3 +87,24 @@ def test_build_report(tmp_path):
     assert len(report["recovered_files"]) == 1
     assert report["recovered_files"][0]["md5"] == "d41d8cd98f00b204e9800998ecf8427e"
     assert "section_65b_certificate" in report
+
+
+def test_report_includes_adjacent_acquisition_manifest(tmp_path):
+    image_path = tmp_path / "acquired.img"
+    image_path.write_bytes(b"acquired evidence")
+    manifest = {
+        "manifest_version": 1,
+        "source_device_identifier": "/dev/sdX",
+        "source_sha256": "a" * 64,
+        "image_sha256": "a" * 64,
+        "integrity_status": "verified",
+    }
+    (tmp_path / "acquired.img.acquisition.json").write_text(json.dumps(manifest), encoding="utf-8")
+    stats = SequencingStats(0, 0, 0, 0, 0, 0)
+
+    report = build_report(
+        image_path=str(image_path), vendor_parser=None, signature_offset=None,
+        all_frames=[], sequences=[], seq_stats=stats, recovered_files=[],
+    )
+
+    assert report["chain_of_custody"]["acquisition_manifest"] == manifest

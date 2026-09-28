@@ -69,3 +69,4 @@ dist/
 *.md
 docs/
 00_PROJECT_CONTEXT.md
+!sample_data/README.md

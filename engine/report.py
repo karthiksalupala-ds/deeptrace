@@ -56,6 +56,22 @@ def _load_meta_json(image_path: str) -> Optional[dict]:
     return None
 
 
+def _load_acquisition_manifest(image_path: str) -> Optional[dict]:
+    """Load the guarded acquisition sidecar when this image was acquired by DeepTrace."""
+    manifest_path = image_path + ".acquisition.json"
+    if not os.path.exists(manifest_path):
+        return None
+    try:
+        with open(manifest_path, encoding="utf-8") as manifest_file:
+            manifest = json.load(manifest_file)
+        if not isinstance(manifest, dict):
+            raise ValueError("manifest root is not an object")
+        return manifest
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        logger.warning("Ignoring unreadable acquisition manifest %s: %s", manifest_path, exc)
+        return None
+
+
 def build_report(
     image_path: str,
     vendor_parser: Optional[BaseVendorParser],
@@ -201,6 +217,7 @@ def build_report(
     ]
 
     # ── Assemble report ────────────────────────────────────────────────────────
+    acquisition_manifest = _load_acquisition_manifest(image_path)
     custody_entry = {
         "source_image_sha256": sha256,
         "acquired_by": operator_name,
@@ -214,6 +231,9 @@ def build_report(
             "All operations were read-only on the source disk image."
         ),
         "prev_entry_hash": prev_entry_hash,
+        # An acquisition manifest is source-side provenance, not a replacement
+        # for the analysis record. Include it in the chained entry when present.
+        "acquisition_manifest": acquisition_manifest,
     }
     entry_hash = hashlib.sha256(
         json.dumps(custody_entry, sort_keys=True, separators=(",", ":")).encode("utf-8")

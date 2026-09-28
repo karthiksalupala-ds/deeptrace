@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 from fastapi.testclient import TestClient
 from pypdf import PdfReader
@@ -120,6 +122,38 @@ def test_custody_hash_chain_links_three_cases(monkeypatch):
     assert custody_entries[1]["prev_entry_hash"] == custody_entries[0]["entry_hash"]
     assert custody_entries[2]["prev_entry_hash"] == custody_entries[1]["entry_hash"]
     assert len({entry["entry_hash"] for entry in custody_entries}) == 3
+
+
+def test_custody_hash_chain_survives_restart(monkeypatch, tmp_path):
+    """The third report must link to the second after reloading the durable ledger."""
+    ledger_path = tmp_path / "custody_log.jsonl"
+    monkeypatch.setattr(jobs_module, "CUSTODY_LOG_PATH", ledger_path)
+    monkeypatch.setattr(jobs_module, "_LAST_CUSTODY_HASH", None)
+
+    def fake_recovery(*, prev_entry_hash, **_kwargs):
+        entry_hash = hashlib.sha256(
+            f"{len(entries)}:{prev_entry_hash}".encode("utf-8")
+        ).hexdigest()
+        return {"chain_of_custody": {"prev_entry_hash": prev_entry_hash, "entry_hash": entry_hash}}
+
+    monkeypatch.setattr(jobs_module, "run_recovery", fake_recovery)
+
+    entries = []
+    for name in ("first.img", "second.img"):
+        job_id = jobs_module.create_job(name)
+        jobs_module.run_job_async(job_id)
+        entries.append(jobs_module.get_job(job_id).report["chain_of_custody"])
+
+    assert entries[1]["prev_entry_hash"] == entries[0]["entry_hash"]
+    assert jobs_module._load_last_custody_hash() == entries[1]["entry_hash"]
+
+    # Simulate a fresh backend process restoring its in-memory cache at startup.
+    monkeypatch.setattr(jobs_module, "_LAST_CUSTODY_HASH", jobs_module._load_last_custody_hash())
+    job_id = jobs_module.create_job("third.img")
+    jobs_module.run_job_async(job_id)
+    third = jobs_module.get_job(job_id).report["chain_of_custody"]
+    assert third["prev_entry_hash"] == entries[1]["entry_hash"]
+    assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 3
 
 
 def test_evidence_search_matches_camera_and_time():
